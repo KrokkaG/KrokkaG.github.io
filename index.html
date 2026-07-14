@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Arcade</title>
+    <!-- Links your external style sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- TOP NAVIGATION BAR (Shows only when playing a game) -->
+    <div id="top-bar">
+        <button class="back-btn" onclick="closeGame()">← Back to Arcade</button>
+    </div>
+    <iframe id="game-frame"></iframe>
+
+    <!-- MAIN ARCADE DASHBOARD -->
+    <div id="dashboard" class="main-content">
+        <h1>🕹️ Web Arcade</h1>
+        <div class="subtitle">Select a game to start playing</div>
+        
+        <div class="game-grid">
+            <div class="game-card" onclick="launchGame('board game.html')">
+                <div class="thumb-box"><img src="board game.jpg" alt="Board Game"></div>
+                <p class="game-title">Board Game</p>
+            </div>
+            <div class="game-card" onclick="launchGame('closet simulator.html')">
+                <div class="thumb-box"><img src="closet simulator.jpg" alt="Closet Simulator"></div>
+                <p class="game-title">Closet Simulator</p>
+            </div>
+            <div class="game-card" onclick="launchGame('colorville.html')">
+                <div class="thumb-box"><img src="colorville.jpg" alt="Colorville"></div>
+                <p class="game-title">Colorville</p>
+            </div>
+            <div class="game-card" onclick="launchGame('fnaf at norps.html')">
+                <div class="thumb-box"><img src="fnaf at norps.jpg" alt="FNAF at Norps"></div>
+                <p class="game-title">FNAF at Norps</p>
+            </div>
+            <div class="game-card" onclick="launchGame('fnaf clone.html')">
+                <div class="thumb-box"><img src="fnaf clone.jpg" alt="FNAF Clone"></div>
+                <p class="game-title">FNAF Clone</p>
+            </div>
+            <div class="game-card" onclick="launchGame('gd.html')">
+                <div class="thumb-box"><img src="gd.jpg" alt="GD Lite"></div>
+                <p class="game-title">GD Lite</p>
+            </div>
+            <div class="game-card" onclick="launchGame('hug the family.html')">
+                <div class="thumb-box"><img src="hug the family.jpg" alt="Hug The Family"></div>
+                <p class="game-title">Hug The Family</p>
+            </div>
+            <div class="game-card" onclick="launchGame('Tyler and snowing.html')">
+                <div class="thumb-box"><img src="tyler and snowing.jpg" alt="Tyler and Snowing"></div>
+                <p class="game-title">Tyler and Snowing</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function launchGame(url) {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('top-bar').style.display = 'flex';
+            
+            const frame = document.getElementById('game-frame');
+            frame.style.display = 'block';
+            frame.src = url;
+        }
+
+        function closeGame() {
+            const frame = document.getElementById('game-frame');
+            frame.style.display = 'none';
+            frame.src = ''; 
+            
+            document.getElementById('top-bar').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
