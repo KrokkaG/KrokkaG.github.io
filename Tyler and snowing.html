@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Tyler & Snowi - Animated Video</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a1a;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      padding: 10px;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    .video-container {
+      width: 100%;
+      max-width: 800px;
+      background: linear-gradient(180deg, #1a1a3e 0%, #0d0d2b 100%);
+      border: 3px solid #4488ff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(68, 136, 255, 0.4), 0 0 80px rgba(68, 136, 255, 0.1);
+      position: relative;
+    }
+
+    .video-header {
+      background: #111133;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #4488ff;
+    }
+
+    .video-title {
+      color: #fff;
+      font-size: 1.1rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+      flex-grow: 1;
+    }
+
+    .video-stats {
+      color: #8888cc;
+      font-size: 0.8rem;
+    }
+
+    .scene-area {
+      width: 100%;
+      height: 400px;
+      background: linear-gradient(180deg, #87CEEB 0%, #E0F0FF 40%, #90EE90 70%, #228B22 100%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Sky elements */
+    .sun {
+      position: absolute;
+      top: 30px;
+      right: 60px;
+      font-size: 4rem;
+      animation: sunPulse 3s ease-in-out infinite;
+      filter: drop-shadow(0 0 20px #FFD700);
+    }
+
+    @keyframes sunPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: 3rem;
+      opacity: 0.8;
+      animation: cloudFloat 8s linear infinite;
+    }
+
+    .cloud:nth-child(2) { top: 50px; left: 20%; animation-delay: -3s; }
+    .cloud:nth-child(3) { top: 80px; left: 60%; animation-delay: -6s; font-size: 2rem; }
+
+    @keyframes cloudFloat {
+      0% { transform: translateX(-100px); }
+      100% { transform: translateX(calc(100vw + 100px)); }
+    }
+
+    /* Ground */
+    .ground {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 35%;
+      background: linear-gradient(180deg, #4CAF50, #2E7D32);
+      border-top: 3px solid #1B5E20;
+    }
+
+    .grass-blade {
+      position: absolute;
+      bottom: 100%;
+      font-size: 1.5rem;
+    }
+
+    /* Characters */
+    .character {
+      position: absolute;
+      bottom: 32%;
+      font-size: 5rem;
+      transition: all 0.5s ease;
+      z-index: 5;
+      filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
+    }
+
+    .tyler {
+      left: 25%;
+      animation: tylerBounce 1s ease-in-out infinite;
+    }
+
+    @keyframes tylerBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    .snowi {
+      right: 25%;
+      animation: snowiFloat 2s ease-in-out infinite;
+    }
+
+    @keyframes snowiFloat {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+
+    /* Speech bubbles */
+    .speech-bubble {
+      position: absolute;
+      background: white;
+      border-radius: 20px;
+      padding: 10px 18px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      z-index: 10;
+      animation: bubblePop 0.3s ease-out;
+      max-width: 200px;
+      text-align: center;
+    }
+
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 15px solid white;
+    }
+
+    .bubble-left { left: 10%; top: 10%; }
+    .bubble-left::after { left: 30px; }
+    .bubble-right { right: 10%; top: 10%; }
+    .bubble-right::after { right: 30px; }
+
+    @keyframes bubblePop {
+      0% { transform: scale(0); opacity: 0; }
+      80% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Controls */
+    .controls-area {
+      background: #111133;
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      border-top: 2px solid #4488ff;
+    }
+
+    .play-btn {
+      background: #4488ff;
+      border: none;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .play-btn:hover {
+      background: #6699ff;
+      box-shadow: 0 0 20px #4488ff;
+      transform: scale(1.05);
+    }
+
+    .play-btn:active {
+      transform: scale(0.95);
+    }
+
+    .play-btn.playing {
+      background: #ff4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 10px #ff4444; }
+      50% { box-shadow: 0 0 30px #ff4444; }
+    }
+
+    .progress-bar {
+      flex-grow: 1;
+      height: 8px;
+      background: #222244;
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4488ff, #88bbff);
+      border-radius: 4px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    .time-display {
+      color: #8888cc;
+      font-size: 0.8rem;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .volume-slider {
+      width: 80px;
+      accent-color: #4488ff;
+    }
+
+    .like-btn {
+      background: none;
+      border: 2px solid #4488ff;
+      color: #4488ff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: 0.2s;
+    }
+
+    .like-btn.liked {
+      background: #4488ff;
+      color: white;
+    }
+
+    /* Subtitles */
+    .subtitles {
+      position: absolute;
+      bottom: 15%;
+      width: 100%;
+      text-align: center;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .subtitle-text {
+      display: inline-block;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 20px;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      animation: subtitleFade 0.3s ease-out;
+    }
+
+    @keyframes subtitleFade {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Effects */
+    .sparkle {
+      position: absolute;
+      pointer-events: none;
+      font-size: 1.5rem;
+      animation: sparkleAnim 1s ease-out forwards;
+      z-index: 20;
+    }
+
+    @keyframes sparkleAnim {
+      0% { opacity: 1; transform: scale(1) translateY(0); }
+      100% { opacity: 0; transform: scale(0) translateY(-50px); }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .scene-area {
+        height: 300px;
+      }
+      .character {
+        font-size: 3.5rem;
+      }
+      .tyler { left: 15%; }
+      .snowi { right: 15%; }
+      .speech-bubble {
+        font-size: 0.7rem;
+        padding: 6px 12px;
+        max-width: 140px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="video-container" id="videoContainer">
+  <!-- Header -->
+  <div class="video-header">
+    <span style="font-size:1.5rem;">🎬</span>
+    <span class="video-title">Tyler & Snowi - Fun Adventure!</span>
+    <span class="video-stats">❤️ 12K • 👁️ 245K views</span>
+  </div>
+
+  <!-- Scene -->
+  <div class="scene-area" id="sceneArea">
+    <div class="sun">☀️</div>
+    <div class="cloud">☁️</div>
+    <div class="cloud">☁️</div>
+    <div class="ground"></div>
+    <div class="character tyler" id="tyler">🧒</div>
+    <div class="character snowi" id="snowi">⛄</div>
+    <div class="subtitles" id="subtitles"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-area">
+    <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+    <div class="progress-bar" id="progressBar" onclick="seekVideo(event)">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <span class="time-display" id="timeDisplay">0:00 / 2:30</span>
+    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70" oninput="setVolume(this.value)" title="Volume">
+    <button class="like-btn" id="likeBtn" onclick="toggleLike()">❤️ Like</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ──────────────────────────────────────
+    // AUDIO ENGINE
+    // ──────────────────────────────────────
+    let audioCtx = null;
+    let masterGain = null;
+    let musicOscillators = [];
+    let currentMusicInterval = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function setVolume(value) {
+      const vol = value / 100;
+      if (masterGain) masterGain.gain.value = vol * 0.7;
+    }
+
+    function stopAllMusic() {
+      if (currentMusicInterval) clearInterval(currentMusicInterval);
+      musicOscillators.forEach(osc => {
+        try { osc.stop(); } catch(e) {}
+      });
+      musicOscillators = [];
+    }
+
+    // Play a happy musical note
+    function playNote(freq, startTime, duration = 0.3, type = 'triangle') {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, startTime);
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(0.3, startTime + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.05);
+      musicOscillators.push(osc);
+    }
+
+    // Play a cheerful melody
+    function playHappyMelody() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const melody = [
+        { freq: 523, time: 0 },    // C5
+        { freq: 587, time: 0.2 },  // D5
+        { freq: 659, time: 0.4 },  // E5
+        { freq: 523, time: 0.6 },  // C5
+        { freq: 659, time: 0.8 },  // E5
+        { freq: 784, time: 1.0 },  // G5
+        { freq: 659, time: 1.2 },  // E5
+        { freq: 523, time: 1.4 },  // C5
+      ];
+      melody.forEach(note => playNote(note.freq, now + note.time, 0.25));
+    }
+
+    // Play background ambient music (looping)
+    function startBackgroundMusic() {
+      stopAllMusic();
+      if (!audioCtx) return;
+      const playLoop = () => {
+        if (!audioCtx || audioCtx.state === 'closed') return;
+        const now = audioCtx.currentTime;
+        // Gentle pad
+        [261, 329, 392, 523].forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.05, now);
+          gain.gain.linearRampToValueAtTime(0.05, now + 0.1);
+          osc.connect(gain);
+          gain.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + 3.5);
+          musicOscillators.push(osc);
+        });
+      };
+      playLoop();
+      currentMusicInterval = setInterval(playLoop, 3500);
+    }
+
+    // Play "talking" sound effect
+    function playTalkSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      for (let i = 0; i < 3; i++) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200 + Math.random() * 400, now + i * 0.08);
+        gain.gain.setValueAtTime(0.05, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.06);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.08);
+        musicOscillators.push(osc);
+      }
+    }
+
+    // Play laugh sound
+    function playLaughSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      [400, 500, 600, 500, 400].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.12);
+        gain.gain.setValueAtTime(0.1, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.1);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.12);
+        musicOscillators.push(osc);
+      });
+    }
+
+    // Play "wow" / surprise sound
+    function playWowSound() {
+      if (!audioCtx) return;
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(gain);
+      gain.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + 0.6);
+      musicOscillators.push(osc);
+    }
+
+    // ──────────────────────────────────────
+    // VIDEO STATE
+    // ──────────────────────────────────────
+    const state = {
+      isPlaying: false,
+      currentTime: 0,
+      duration: 150, // 2:30 in seconds
+      videoInterval: null,
+      sceneIndex: 0,
+      liked: false,
+    };
+
+    // Video timeline events
+    const timeline = [
+      { time: 0, action: 'scene1', subtitle: 'Tyler: "Hey Snowi! What a beautiful day!"' },
+      { time: 5, action: 'snowiRespond', subtitle: 'Snowi: "Hi Tyler! The sun is so warm!"' },
+      { time: 10, action: 'tylerLaugh', subtitle: 'Tyler: "Haha! Let\'s go on an adventure!"' },
+      { time: 16, action: 'snowiExcited', subtitle: 'Snowi: "Oh! Where are we going?"' },
+      { time: 22, action: 'tylerPoint', subtitle: 'Tyler: "To the magical forest! Come on!"' },
+      { time: 28, action: 'bothRun', subtitle: '*They run off together into the forest*' },
+      { time: 35, action: 'sceneChange', subtitle: '🌳 In the magical forest...' },
+      { time: 40, action: 'snowiWow', subtitle: 'Snowi: "Wooow! Look at all the glowing mushrooms!"' },
+      { time: 47, action: 'tylerAmazed', subtitle: 'Tyler: "This place is incredible!"' },
+      { time: 53, action: 'bothDance', subtitle: '*They dance among the fireflies* 🎵' },
+      { time: 62, action: 'snowiHappy', subtitle: 'Snowi: "This is the best day ever!"' },
+      { time: 69, action: 'tylerHappy', subtitle: 'Tyler: "And I\'m so happy to share it with you!"' },
+      { time: 76, action: 'bothHug', subtitle: '*Tyler and Snowi share a warm hug* 🤗' },
+      { time: 83, action: 'sunsetScene', subtitle: '🌅 As the sun begins to set...' },
+      { time: 90, action: 'tylerReflect', subtitle: 'Tyler: "We should head back home now."' },
+      { time: 97, action: 'snowiAgree', subtitle: 'Snowi: "Okay! But let\'s come back tomorrow!"' },
+      { time: 104, action: 'bothWalk', subtitle: '*They walk home together, tired but happy*' },
+      { time: 112, action: 'tylerGoodnight', subtitle: 'Tyler: "Goodnight, Snowi! Sweet dreams!"' },
+      { time: 119, action: 'snowiGoodnight', subtitle: 'Snowi: "Goodnight, Tyler! See you tomorrow!"' },
+      { time: 126, action: 'starsAppear', subtitle: '✨ The stars twinkle above as they sleep...' },
+      { time: 135, action: 'endCard', subtitle: '❤️ THE END - Thanks for watching! ❤️' },
+    ];
+
+    function getCurrentTimelineEvent() {
+      let current = null;
+      for (const event of timeline) {
+        if (state.currentTime >= event.time) {
+          current = event;
+        }
+      }
+      return current;
+    }
+
+    function showSubtitle(text) {
+      const subtitles = document.getElementById('subtitles');
+      subtitles.innerHTML = `<span class="subtitle-text">${text}</span>`;
+      setTimeout(() => {
+        if (subtitles.querySelector('.subtitle-text')) {
+          subtitles.innerHTML = '';
+        }
+      }, 3500);
+    }
+
+    function executeAction(action) {
+      const tyler = document.getElementById('tyler');
+      const snowi = document.getElementById('snowi');
+      const scene = document.getElementById('sceneArea');
+      const sceneBg = scene.style;
+
+      switch(action) {
+        case 'scene1':
+          tyler.style.left = '25%';
+          snowi.style.right = '25%';
+          tyler.textContent = '🧒';
+          snowi.textContent = '⛄';
+          sceneBg.background = 'linear-gradient(180deg, #87CEEB 0%, #E0F0FF 40%, #90EE90 70%, #228B22 100%)';
+          playTalkSound();
+          break;
+        case 'snowiRespond':
+          snowi.style.transform = 'translateY(-20px) rotate(5deg)';
+          setTimeout(() => snowi.style.transform = '', 500);
+          playTalkSound();
+          break;
+        case 'tylerLaugh':
+          tyler.style.transform = 'translateY(-20px)';
+          setTimeout(() => tyler.style.transform = '', 500);
+          playLaughSound();
+          break;
+        case 'snowiExcited':
+          snowi.style.transform = 'scale(1.2)';
+          setTimeout(() => snowi.style.transform = '', 400);
+          playTalkSound();
+          break;
+        case 'tylerPoint':
+          tyler.textContent = '🧒👉';
+          setTimeout(() => tyler.textContent = '🧒', 1500);
+          playTalkSound();
+          break;
+        case 'bothRun':
+          tyler.style.left = '10%';
+          snowi.style.right = '10%';
+          tyler.style.transform = 'translateY(-10px)';
+          snowi.style.transform = 'translateY(-10px)';
+          setTimeout(() => {
+            tyler.style.transform = '';
+            snowi.style.transform = '';
+          }, 1000);
+          break;
+        case 'sceneChange':
+          sceneBg.background = 'linear-gradient(180deg, #1a3a1a 0%, #0d2b0d 30%, #1a4a1a 70%, #0a1a0a 100%)';
+          tyler.style.left = '30%';
+          snowi.style.right = '30%';
+          playWowSound();
+          break;
+        case 'snowiWow':
+          snowi.textContent = '⛄✨';
+          snowi.style.transform = 'scale(1.3)';
+          setTimeout(() => {
+            snowi.textContent = '⛄';
+            snowi.style.transform = '';
+          }, 1500);
+          playWowSound();
+          break;
+        case 'tylerAmazed':
+          tyler.textContent = '🧒✨';
+          setTimeout(() => tyler.textContent = '🧒', 1500);
+          playTalkSound();
+          break;
+        case 'bothDance':
+          tyler.style.animation = 'tylerBounce 0.5s ease-in-out infinite';
+          snowi.style.animation = 'snowiFloat 0.5s ease-in-out infinite';
+          playHappyMelody();
+          setTimeout(() => {
+            tyler.style.animation = 'tylerBounce 1s ease-in-out infinite';
+            snowi.style.animation = 'snowiFloat 2s ease-in-out infinite';
+          }, 3000);
+          break;
+        case 'snowiHappy':
+          snowi.style.transform = 'rotate(360deg)';
+          setTimeout(() => snowi.style.transform = '', 800);
+          playLaughSound();
+          break;
+        case 'tylerHappy':
+          tyler.style.transform = 'scale(1.2)';
+          setTimeout(() => tyler.style.transform = '', 600);
+          playTalkSound();
+          break;
+        case 'bothHug':
+          tyler.style.left = '35%';
+          snowi.style.right = '35%';
+          tyler.textContent = '🧒❤️';
+          snowi.textContent = '❤️⛄';
+          setTimeout(() => {
+            tyler.textContent = '🧒';
+            snowi.textContent = '⛄';
+            tyler.style.left = '25%';
+            snowi.style.right = '25%';
+          }, 3000);
+          playHappyMelody();
+          break;
+        case 'sunsetScene':
+          sceneBg.background = 'linear-gradient(180deg, #FF6B35 0%, #FF8C42 30%, #E8A87C 60%, #2d5a1e 100%)';
+          document.querySelector('.sun').textContent = '🌅';
+          break;
+        case 'tylerReflect':
+          tyler.style.left = '20%';
+          playTalkSound();
+          break;
+        case 'snowiAgree':
+          snowi.style.right = '20%';
+          playTalkSound();
+          break;
+        case 'bothWalk':
+          tyler.style.left = '15%';
+          snowi.style.right = '15%';
+          break;
+        case 'tylerGoodnight':
+          tyler.textContent = '🧒😴';
+          playTalkSound();
+          break;
+        case 'snowiGoodnight':
+          snowi.textContent = '⛄😴';
+          playTalkSound();
+          break;
+        case 'starsAppear':
+          sceneBg.background = 'linear-gradient(180deg, #0a0a2e 0%, #1a1a3e 50%, #0d0d2b 100%)';
+          document.querySelector('.sun').textContent = '🌙';
+          // Add sparkles
+          for (let i = 0; i < 5; i++) {
+            setTimeout(() => {
+              const sparkle = document.createElement('span');
+              sparkle.className = 'sparkle';
+              sparkle.textContent = '✨';
+              sparkle.style.left = Math.random() * 80 + '%';
+              sparkle.style.top = Math.random() * 50 + '%';
+              scene.appendChild(sparkle);
+              setTimeout(() => sparkle.remove(), 1500);
+            }, i * 200);
+          }
+          break;
+        case 'endCard':
+          showSubtitle('❤️ THE END - Thanks for watching! ❤️');
+          playHappyMelody();
+          break;
+      }
+    }
+
+    function updateProgress() {
+      const fill = document.getElementById('progressFill');
+      const display = document.getElementById('timeDisplay');
+      const percent = (state.currentTime / state.duration) * 100;
+      fill.style.width = percent + '%';
+      const currentMin = Math.floor(state.currentTime / 60);
+      const currentSec = Math.floor(state.currentTime % 60);
+      const totalMin = Math.floor(state.duration / 60);
+      const totalSec = Math.floor(state.duration % 60);
+      display.textContent = `${currentMin}:${currentSec.toString().padStart(2,'0')} / ${totalMin}:${totalSec.toString().padStart(2,'0')}`;
+    }
+
+    function advanceTime() {
+      if (!state.isPlaying) return;
+      state.currentTime += 0.5;
+      if (state.currentTime >= state.duration) {
+        state.currentTime = state.duration;
+        pauseVideo();
+      }
+      updateProgress();
+      const event = getCurrentTimelineEvent();
+      if (event && event.action !== state.lastAction) {
+        state.lastAction = event.action;
+        showSubtitle(event.subtitle);
+        executeAction(event.action);
+      }
+    }
+
+    function togglePlay() {
+      initAudio();
+      if (state.isPlaying) {
+        pauseVideo();
+      } else {
+        playVideo();
+      }
+    }
+
+    function playVideo() {
+      if (state.currentTime >= state.duration) {
+        state.currentTime = 0;
+        state.lastAction = null;
+        document.getElementById('tyler').style.left = '25%';
+        document.getElementById('snowi').style.right = '25%';
+        document.getElementById('sceneArea').style.background = 'linear-gradient(180deg, #87CEEB 0%, #E0F0FF 40%, #90EE90 70%, #228B22 100%)';
+        document.querySelector('.sun').textContent = '☀️';
+      }
+      state.isPlaying = true;
+      document.getElementById('playBtn').textContent = '⏸ PAUSE';
+      document.getElementById('playBtn').classList.add('playing');
+      startBackgroundMusic();
+      state.videoInterval = setInterval(advanceTime, 500);
+    }
+
+    function pauseVideo() {
+      state.isPlaying = false;
+      document.getElementById('playBtn').textContent = '▶ PLAY';
+      document.getElementById('playBtn').classList.remove('playing');
+      stopAllMusic();
+      if (state.videoInterval) clearInterval(state.videoInterval);
+    }
+
+    function seekVideo(e) {
+      const bar = document.getElementById('progressBar');
+      const rect = bar.getBoundingClientRect();
+      const percent = (e.clientX - rect.left) / rect.width;
+      state.currentTime = Math.max(0, Math.min(state.duration, percent * state.duration));
+      state.lastAction = null;
+      updateProgress();
+      const event = getCurrentTimelineEvent();
+      if (event) {
+        state.lastAction = event.action;
+        showSubtitle(event.subtitle);
+        executeAction(event.action);
+      }
+    }
+
+    function toggleLike() {
+      state.liked = !state.liked;
+      const btn = document.getElementById('likeBtn');
+      if (state.liked) {
+        btn.textContent = '❤️ Liked';
+        btn.classList.add('liked');
+      } else {
+        btn.textContent = '❤️ Like';
+        btn.classList.remove('liked');
+      }
+    }
+
+    // Initialize
+    updateProgress();
+    document.getElementById('volumeSlider').value = 70;
+    setVolume(70);
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.code === 'ArrowRight') {
+        state.currentTime = Math.min(state.duration, state.currentTime + 5);
+        updateProgress();
+      } else if (e.code === 'ArrowLeft') {
+        state.currentTime = Math.max(0, state.currentTime - 5);
+        updateProgress();
+      }
+    });
+
+    // Expose functions globally
+    window.togglePlay = togglePlay;
+    window.seekVideo = seekVideo;
+    window.setVolume = setVolume;
+    window.toggleLike = toggleLike;
+
+    console.log('🎬 Tyler & Snowi video ready! Press Play or Space to start.');
+    console.log('📱 Works on mobile too! Tap the Play button.');
+  })();
+</script>
+</body>
+</html>

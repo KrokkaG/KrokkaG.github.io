@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Color Ville - Build Your Colorful Town</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #1a1a2e;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      padding: 8px;
+      margin: 0;
+      user-select: none;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 800px;
+      background: #16213e;
+      border: 3px solid #e94560;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(233, 69, 96, 0.3);
+    }
+
+    .game-header {
+      background: #0f3460;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #e94560;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .game-title {
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px #e94560;
+    }
+
+    .town-stats {
+      display: flex;
+      gap: 15px;
+      color: #ccc;
+      font-size: 0.8rem;
+    }
+
+    .stat {
+      background: #1a1a2e;
+      padding: 5px 12px;
+      border-radius: 15px;
+      border: 1px solid #e94560;
+    }
+
+    .town-area {
+      width: 100%;
+      height: 450px;
+      background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 50%, #90EE90 60%, #228B22 100%);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .sky {
+      position: absolute;
+      top: 0;
+      width: 100%;
+      height: 50%;
+    }
+
+    .sun {
+      position: absolute;
+      top: 15px;
+      right: 30px;
+      font-size: 3rem;
+      animation: sunGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes sunGlow {
+      0%, 100% { filter: drop-shadow(0 0 10px #FFD700); }
+      50% { filter: drop-shadow(0 0 25px #FFD700); }
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: 2.5rem;
+      animation: cloudDrift 12s linear infinite;
+      opacity: 0.8;
+    }
+
+    .cloud:nth-child(2) { top: 30px; animation-delay: -4s; }
+    .cloud:nth-child(3) { top: 60px; animation-delay: -8s; font-size: 1.8rem; }
+
+    @keyframes cloudDrift {
+      0% { transform: translateX(-100px); }
+      100% { transform: translateX(900px); }
+    }
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 40%;
+      background: linear-gradient(180deg, #4CAF50, #2E7D32);
+    }
+
+    .road {
+      position: absolute;
+      bottom: 20%;
+      width: 100%;
+      height: 12%;
+      background: #555;
+      border-top: 3px solid #777;
+      border-bottom: 3px solid #777;
+    }
+
+    .road-line {
+      position: absolute;
+      top: 50%;
+      width: 100%;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, #FFD700 0px, #FFD700 30px, transparent 30px, transparent 60px);
+    }
+
+    .building {
+      position: absolute;
+      border-radius: 6px 6px 0 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    .building:hover {
+      transform: scale(1.08);
+      z-index: 10;
+      filter: brightness(1.2);
+    }
+
+    .building .window {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #FFD700;
+      border-radius: 2px;
+    }
+
+    .tree {
+      position: absolute;
+      font-size: 2.5rem;
+      cursor: pointer;
+      transition: 0.3s;
+      z-index: 5;
+    }
+
+    .tree:hover {
+      transform: scale(1.2);
+    }
+
+    .character {
+      position: absolute;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: 0.3s;
+      z-index: 8;
+      animation: characterBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes characterBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .character:hover {
+      transform: scale(1.3);
+      filter: drop-shadow(0 0 10px white);
+    }
+
+    /* Color Palette */
+    .color-palette {
+      background: #0f3460;
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      border-top: 2px solid #e94560;
+    }
+
+    .color-swatch {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .color-swatch:hover {
+      transform: scale(1.2);
+    }
+
+    .color-swatch.selected {
+      border-color: #fff;
+      box-shadow: 0 0 15px currentColor;
+    }
+
+    .tool-btn {
+      background: #e94560;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.8rem;
+      transition: 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .tool-btn:hover {
+      background: #ff6b8a;
+      box-shadow: 0 0 15px #e94560;
+    }
+
+    .tool-btn.active {
+      background: #00cc66;
+      box-shadow: 0 0 15px #00cc66;
+    }
+
+    .info-panel {
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 0.85rem;
+      border-top: 1px solid #e94560;
+    }
+
+    .speech-bubble {
+      position: absolute;
+      background: white;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      z-index: 20;
+      pointer-events: none;
+      animation: popIn 0.3s ease-out;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .town-area {
+        height: 350px;
+      }
+      .building {
+        font-size: 1rem;
+      }
+      .color-swatch {
+        width: 24px;
+        height: 24px;
+      }
+      .game-title {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- Header -->
+  <div class="game-header">
+    <span class="game-title">🎨 COLOR VILLE</span>
+    <div class="town-stats">
+      <span class="stat">🏘️ <span id="buildingCount">8</span> Buildings</span>
+      <span class="stat">🌳 <span id="treeCount">6</span> Trees</span>
+      <span class="stat">😊 <span id="visitorCount">3</span> Visitors</span>
+    </div>
+  </div>
+
+  <!-- Town Area -->
+  <div class="town-area" id="townArea" onclick="handleTownClick(event)">
+    <div class="sky">
+      <div class="sun">☀️</div>
+      <div class="cloud">☁️</div>
+      <div class="cloud">☁️</div>
+    </div>
+    <div class="ground"></div>
+    <div class="road">
+      <div class="road-line"></div>
+    </div>
+  </div>
+
+  <!-- Color Palette -->
+  <div class="color-palette" id="colorPalette">
+    <span style="color:#fff; font-size:0.8rem; margin-right:5px;">Brush:</span>
+    <div class="color-swatch selected" style="background:#FF6B6B;" data-color="#FF6B6B" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#4ECDC4;" data-color="#4ECDC4" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#FFE66D;" data-color="#FFE66D" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#A78BFA;" data-color="#A78BFA" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#FF8C42;" data-color="#FF8C42" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#6BCB77;" data-color="#6BCB77" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#4D96FF;" data-color="#4D96FF" onclick="selectColor(this)"></div>
+    <div class="color-swatch" style="background:#FF69B4;" data-color="#FF69B4" onclick="selectColor(this)"></div>
+    <div style="flex-grow:1;"></div>
+    <button class="tool-btn active" id="paintTool" onclick="setTool('paint')">🖌️ Paint</button>
+    <button class="tool-btn" id="buildTool" onclick="setTool('build')">🏗️ Build</button>
+    <button class="tool-btn" id="treeTool" onclick="setTool('tree')">🌳 Plant</button>
+  </div>
+
+  <!-- Info -->
+  <div class="info-panel" id="infoPanel">
+    Click buildings to paint them! Use tools to build and decorate your town.
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ──────────────────────────────────────
+    // COLOR VILLE - GAME STATE
+    // ──────────────────────────────────────
+    const state = {
+      selectedColor: '#FF6B6B',
+      currentTool: 'paint',
+      buildings: [],
+      trees: [],
+      characters: [],
+      nextBuildingId: 1,
+      nextTreeId: 1,
+      nextCharId: 1,
+    };
+
+    const townArea = document.getElementById('townArea');
+    const infoPanel = document.getElementById('infoPanel');
+
+    // Predefined building types
+    const buildingTypes = [
+      { emoji: '🏠', name: 'House', width: 70, height: 80 },
+      { emoji: '🏢', name: 'Office', width: 55, height: 110 },
+      { emoji: '🏪', name: 'Shop', width: 65, height: 70 },
+      { emoji: '🏫', name: 'School', width: 80, height: 90 },
+      { emoji: '🏥', name: 'Hospital', width: 75, height: 100 },
+      { emoji: '🏭', name: 'Factory', width: 85, height: 85 },
+      { emoji: '🏰', name: 'Castle', width: 90, height: 120 },
+      { emoji: '⛪', name: 'Church', width: 60, height: 105 },
+    ];
+
+    const treeEmojis = ['🌳', '🌲', '🌴', '🌿', '🎄', '🪴'];
+
+    const characterEmojis = ['😊', '👧', '👦', '👩', '👨', '🧒', '👶', '🧑', '👴', '👵'];
+
+    // ──────────────────────────────────────
+    // INITIALIZE TOWN
+    // ──────────────────────────────────────
+    function createBuilding(x, y, color, type) {
+      const buildingType = type || buildingTypes[Math.floor(Math.random() * buildingTypes.length)];
+      const building = document.createElement('div');
+      building.className = 'building';
+      building.style.left = x + 'px';
+      building.style.bottom = y + 'px';
+      building.style.width = buildingType.width + 'px';
+      building.style.height = buildingType.height + 'px';
+      building.style.background = color || state.selectedColor;
+      building.textContent = buildingType.emoji;
+      building.dataset.id = state.nextBuildingId;
+      building.dataset.color = color || state.selectedColor;
+      building.dataset.type = buildingType.name;
+
+      // Add windows
+      for (let i = 0; i < 3; i++) {
+        const win = document.createElement('div');
+        win.className = 'window';
+        win.style.top = (15 + i * 25) + 'px';
+        win.style.left = (buildingType.width / 2 - 4) + 'px';
+        building.appendChild(win);
+      }
+
+      building.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleBuildingClick(building);
+      });
+
+      townArea.appendChild(building);
+      state.buildings.push(building);
+      state.nextBuildingId++;
+      updateStats();
+      return building;
+    }
+
+    function createTree(x, y) {
+      const tree = document.createElement('div');
+      tree.className = 'tree';
+      tree.style.left = x + 'px';
+      tree.style.bottom = y + 'px';
+      tree.textContent = treeEmojis[Math.floor(Math.random() * treeEmojis.length)];
+      tree.dataset.id = state.nextTreeId;
+      tree.dataset.type = 'tree';
+
+      tree.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showSpeechBubble(tree, '🌳 I love this town!');
+      });
+
+      townArea.appendChild(tree);
+      state.trees.push(tree);
+      state.nextTreeId++;
+      updateStats();
+      return tree;
+    }
+
+    function createCharacter(x, y) {
+      const character = document.createElement('div');
+      character.className = 'character';
+      character.style.left = x + 'px';
+      character.style.bottom = y + 'px';
+      character.textContent = characterEmojis[Math.floor(Math.random() * characterEmojis.length)];
+      character.dataset.id = state.nextCharId;
+      character.dataset.type = 'character';
+
+      character.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const messages = [
+          'Hello! What a colorful town!',
+          'I love living here!',
+          'Such beautiful buildings!',
+          'This place makes me happy!',
+          'Can I live here forever?',
+          'Wow, look at those colors!',
+        ];
+        showSpeechBubble(character, messages[Math.floor(Math.random() * messages.length)]);
+      });
+
+      // Animate character walking
+      let direction = 1;
+      setInterval(() => {
+        const currentLeft = parseFloat(character.style.left);
+        if (currentLeft > townArea.clientWidth - 50) direction = -1;
+        if (currentLeft < 10) direction = 1;
+        character.style.left = (currentLeft + direction * 15) + 'px';
+      }, 2000);
+
+      townArea.appendChild(character);
+      state.characters.push(character);
+      state.nextCharId++;
+      updateStats();
+      return character;
+    }
+
+    function showSpeechBubble(element, message) {
+      const existing = document.querySelector('.speech-bubble');
+      if (existing) existing.remove();
+
+      const bubble = document.createElement('div');
+      bubble.className = 'speech-bubble';
+      bubble.textContent = message;
+      const rect = element.getBoundingClientRect();
+      const townRect = townArea.getBoundingClientRect();
+      bubble.style.left = (rect.left - townRect.left + rect.width / 2 - 60) + 'px';
+      bubble.style.top = (rect.top - townRect.top - 40) + 'px';
+      townArea.appendChild(bubble);
+
+      setTimeout(() => bubble.remove(), 2500);
+    }
+
+    // ──────────────────────────────────────
+    // INTERACTIONS
+    // ──────────────────────────────────────
+    function handleBuildingClick(building) {
+      if (state.currentTool === 'paint') {
+        building.style.background = state.selectedColor;
+        building.dataset.color = state.selectedColor;
+        infoPanel.textContent = `🎨 Painted ${building.dataset.type} ${state.selectedColor}!`;
+        playClickSound();
+      } else if (state.currentTool === 'build') {
+        infoPanel.textContent = `🏗️ Click on empty ground to build a new building!`;
+      }
+    }
+
+    function handleTownClick(e) {
+      if (e.target.closest('.building') || e.target.closest('.tree') || e.target.closest('.character')) {
+        return;
+      }
+
+      const rect = townArea.getBoundingClientRect();
+      const x = e.clientX - rect.left - 35;
+      const y = rect.bottom - e.clientY - 40;
+
+      // Keep buildings above the road
+      const roadTop = rect.height * 0.2;
+      const adjustedY = Math.max(roadTop + 10, Math.min(rect.height - 100, y));
+
+      if (state.currentTool === 'build') {
+        createBuilding(x, adjustedY, state.selectedColor);
+        infoPanel.textContent = `🏗️ Built a new building!`;
+        playBuildSound();
+      } else if (state.currentTool === 'tree') {
+        createTree(x, adjustedY);
+        infoPanel.textContent = `🌳 Planted a new tree!`;
+        playClickSound();
+      } else if (state.currentTool === 'paint') {
+        // Paint the ground with flowers
+        const flower = document.createElement('div');
+        flower.textContent = '🌸';
+        flower.style.position = 'absolute';
+        flower.style.left = x + 'px';
+        flower.style.bottom = adjustedY + 'px';
+        flower.style.fontSize = '1.5rem';
+        flower.style.pointerEvents = 'none';
+        flower.style.zIndex = '3';
+        flower.style.animation = 'popIn 0.3s ease-out';
+        townArea.appendChild(flower);
+        setTimeout(() => flower.remove(), 3000);
+        infoPanel.textContent = `🌸 Planted some flowers!`;
+        playClickSound();
+      }
+    }
+
+    // ──────────────────────────────────────
+    // TOOLS & COLORS
+    // ──────────────────────────────────────
+    function selectColor(swatch) {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      swatch.classList.add('selected');
+      state.selectedColor = swatch.dataset.color;
+      infoPanel.textContent = `🎨 Selected color: ${state.selectedColor}`;
+    }
+
+    function setTool(tool) {
+      state.currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tool + 'Tool').classList.add('active');
+
+      switch(tool) {
+        case 'paint':
+          infoPanel.textContent = '🖌️ Click buildings to paint them!';
+          break;
+        case 'build':
+          infoPanel.textContent = '🏗️ Click empty ground to build a new building!';
+          break;
+        case 'tree':
+          infoPanel.textContent = '🌳 Click empty ground to plant a tree!';
+          break;
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('buildingCount').textContent = state.buildings.length;
+      document.getElementById('treeCount').textContent = state.trees.length;
+      document.getElementById('visitorCount').textContent = state.characters.length;
+    }
+
+    // ──────────────────────────────────────
+    // AUDIO
+    // ──────────────────────────────────────
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playClickSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+      } catch(e) {}
+    }
+
+    function playBuildSound() {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(500, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+      } catch(e) {}
+    }
+
+    // ──────────────────────────────────────
+    // INITIALIZE DEFAULT TOWN
+    // ──────────────────────────────────────
+    function initializeTown() {
+      const townWidth = townArea.clientWidth;
+      const townHeight = townArea.clientHeight;
+      const groundY = townHeight * 0.35;
+
+      // Create initial buildings
+      const buildingPositions = [
+        { x: 40, y: groundY, color: '#FF6B6B', type: buildingTypes[0] },
+        { x: 140, y: groundY, color: '#4ECDC4', type: buildingTypes[1] },
+        { x: 250, y: groundY, color: '#FFE66D', type: buildingTypes[2] },
+        { x: 360, y: groundY, color: '#A78BFA', type: buildingTypes[3] },
+        { x: 470, y: groundY, color: '#FF8C42', type: buildingTypes[0] },
+        { x: 560, y: groundY, color: '#6BCB77', type: buildingTypes[4] },
+        { x: 90, y: groundY + 90, color: '#4D96FF', type: buildingTypes[5] },
+        { x: 320, y: groundY + 90, color: '#FF69B4', type: buildingTypes[6] },
+      ];
+
+      buildingPositions.forEach(pos => {
+        createBuilding(pos.x, pos.y, pos.color, pos.type);
+      });
+
+      // Create trees
+      const treePositions = [
+        { x: 20, y: groundY - 10 },
+        { x: 200, y: groundY - 5 },
+        { x: 420, y: groundY - 10 },
+        { x: 530, y: groundY + 85 },
+        { x: 650, y: groundY - 5 },
+        { x: 160, y: groundY + 85 },
+      ];
+
+      treePositions.forEach(pos => {
+        createTree(pos.x, pos.y);
+      });
+
+      // Create characters
+      const charPositions = [
+        { x: 100, y: groundY + 30 },
+        { x: 300, y: groundY + 30 },
+        { x: 500, y: groundY + 30 },
+      ];
+
+      charPositions.forEach(pos => {
+        createCharacter(pos.x, pos.y);
+      });
+
+      updateStats();
+    }
+
+    // ──────────────────────────────────────
+    // GLOBAL FUNCTIONS
+    // ──────────────────────────────────────
+    window.selectColor = selectColor;
+    window.setTool = setTool;
+    window.handleTownClick = handleTownClick;
+    window.handleBuildingClick = handleBuildingClick;
+
+    // Initialize on load
+    initializeTown();
+    infoPanel.textContent = '🎨 Welcome to Color Ville! Paint buildings, build new ones, and plant trees!';
+
+    console.log('🏘️ Color Ville is ready!');
+    console.log('🖌️ Select a color and click buildings to paint them');
+    console.log('🏗️ Use Build tool to add new buildings');
+    console.log('🌳 Use Plant tool to add trees');
+    console.log('😊 Click on visitors to talk to them!');
+  })();
+</script>
+</body>
+</html>

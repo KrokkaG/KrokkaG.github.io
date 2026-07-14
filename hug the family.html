@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>Hug Mama & Papa - Met Norp, Mister & Zeehondjes</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    body { background:#1a0a2e; min-height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Segoe UI','Georgia',serif; padding:8px; margin:0; touch-action:manipulation; }
+    .game-container { width:100%; max-width:780px; background:linear-gradient(180deg,#2d1b4e 0%,#1a0a2e 100%); border:3px solid #ff88aa; border-radius:20px; overflow:hidden; box-shadow:0 0 50px rgba(255,136,170,0.3); position:relative; }
+    .game-header { background:#0d0520; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #ff88aa; flex-wrap:wrap; gap:8px; }
+    .game-title { color:#ffccdd; font-size:1.3rem; font-weight:bold; letter-spacing:2px; text-shadow:0 0 15px #ff88aa; }
+    .hug-meter-container { display:flex; align-items:center; gap:8px; color:#ffccdd; font-size:0.8rem; }
+    .hug-meter { width:100px; height:14px; background:#1a0a2e; border:2px solid #ff88aa; border-radius:10px; overflow:hidden; }
+    .hug-fill { height:100%; background:linear-gradient(90deg,#ff88aa,#ff4466); border-radius:8px; transition:width 0.3s ease; width:0%; }
+    .scene { width:100%; height:360px; background:linear-gradient(180deg,#2a1a3e 0%,#1a0a2e 40%,#3d2b1a 60%,#2d1b0e 100%); position:relative; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; }
+    .wall { position:absolute; top:0; width:100%; height:65%; background:linear-gradient(180deg,#f5e6d3 0%,#e8d5c0 100%); }
+    .wallpaper { position:absolute; top:0; width:100%; height:100%; background:repeating-linear-gradient(90deg,transparent 0px,transparent 40px,rgba(255,136,170,0.08) 40px,rgba(255,136,170,0.08) 42px); }
+    .floor { position:absolute; bottom:0; width:100%; height:35%; background:linear-gradient(180deg,#8B6914 0%,#6B4F12 100%); }
+    .floor-wood { position:absolute; bottom:0; width:100%; height:100%; background:repeating-linear-gradient(0deg,transparent 0px,transparent 8px,rgba(0,0,0,0.2) 8px,rgba(0,0,0,0.2) 10px); }
+    .bed { position:absolute; bottom:10%; left:2%; width:160px; height:100px; background:#d4a574; border-radius:10px 10px 0 0; box-shadow:0 4px 10px rgba(0,0,0,0.4); }
+    .bed-blanket { position:absolute; bottom:0; left:10%; width:80%; height:40%; background:#ffccdd; border-radius:8px; box-shadow:inset 0 -5px 10px rgba(0,0,0,0.2); }
+    .bed-pillow { position:absolute; top:15px; left:10px; width:50px; height:30px; background:white; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.3); }
+    .nightstand { position:absolute; bottom:12%; left:22%; width:50px; height:70px; background:#8B4513; border-radius:5px; box-shadow:0 4px 8px rgba(0,0,0,0.5); }
+    .nightstand-lamp { position:absolute; top:-15px; left:15px; font-size:1.8rem; filter:drop-shadow(0 0 8px #FFD700); }
+    .window-frame { position:absolute; top:25px; right:20px; width:90px; height:90px; background:#1a1a3e; border:5px solid #8B6914; border-radius:4px; box-shadow:inset 0 0 30px rgba(255,255,200,0.3); }
+    .curtain-left,.curtain-right { position:absolute; top:-5px; width:20px; height:100px; background:#ff88aa; opacity:0.7; border-radius:5px; }
+    .curtain-left { left:-10px; } .curtain-right { right:-10px; }
+    .wardrobe { position:absolute; bottom:12%; right:2%; width:70px; height:110px; background:#a0522d; border-radius:5px; box-shadow:0 4px 10px rgba(0,0,0,0.5); }
+    .wardrobe-door { position:absolute; top:5px; left:5px; width:25px; height:80px; background:#8B4513; border-radius:3px; border:1px solid #6B3410; }
+    .toy-box { position:absolute; bottom:5%; left:35%; font-size:2rem; }
+    .rug { position:absolute; bottom:8%; left:50%; transform:translateX(-50%); width:280px; height:80px; background:radial-gradient(ellipse,#c44 0%,#a33 60%,transparent 70%); border-radius:50%; opacity:0.4; }
+    .character { position:absolute; bottom:16%; font-size:4rem; transition:all 0.5s ease; z-index:10; filter:drop-shadow(0 5px 15px rgba(0,0,0,0.3)); cursor:pointer; }
+    .player { left:8%; animation:playerIdle 3s ease-in-out infinite; }
+    .norp { left:30%; animation:norpBounce 2.5s ease-in-out infinite; }
+    .papa { left:50%; animation:papaIdle 3.5s ease-in-out infinite; }
+    .mother { right:8%; animation:motherIdle 4s ease-in-out infinite; }
+    .cat { position:absolute; bottom:18%; left:20%; font-size:2.5rem; z-index:9; cursor:pointer; animation:catWiggle 4s ease-in-out infinite; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.4)); }
+    @keyframes catWiggle { 0%,100%{transform:rotate(0deg);} 25%{transform:rotate(5deg);} 75%{transform:rotate(-5deg);} }
+    .plushie { position:absolute; font-size:1.5rem; z-index:9; pointer-events:none; filter:drop-shadow(0 2px 5px rgba(0,0,0,0.3)); }
+    #fluffy{ bottom:14%; left:27%; } #duppy{ bottom:12%; left:35%; } #luppy{ bottom:16%; left:31%; }
+    @keyframes playerIdle { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+    @keyframes norpBounce { 0%,100%{transform:translateY(0) rotate(-3deg);} 30%{transform:translateY(-14px) rotate(3deg);} 60%{transform:translateY(-4px) rotate(-2deg);} }
+    @keyframes papaIdle { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+    @keyframes motherIdle { 0%,100%{transform:translateY(0) scaleX(-1);} 50%{transform:translateY(-5px) scaleX(-1);} }
+    .hugging .player { left:35%; transform:scale(1.12); animation:hugPulse 0.5s ease-in-out infinite; }
+    .hugging .norp { left:40%; transform:scale(1.08); animation:hugPulse 0.5s ease-in-out infinite; animation-delay:0.12s; }
+    .hugging .papa { left:45%; transform:scale(1.1); animation:hugPulse 0.5s ease-in-out infinite; animation-delay:0.24s; }
+    .hugging .mother { right:5%; transform:scale(1.12) scaleX(-1); animation:hugPulse 0.5s ease-in-out infinite; animation-delay:0.36s; }
+    @keyframes hugPulse { 0%,100%{transform:scale(1.12);} 50%{transform:scale(1.18);} }
+    .heart-particle { position:absolute; font-size:1.4rem; pointer-events:none; z-index:15; animation:heartFloat 1.5s ease-out forwards; }
+    @keyframes heartFloat { 0%{opacity:1;transform:translateY(0) scale(0.5);} 50%{opacity:1;transform:translateY(-60px) scale(1.2);} 100%{opacity:0;transform:translateY(-120px) scale(0.3);} }
+    .dialogue-box { background:rgba(0,0,0,0.85); padding:12px 18px; border-top:2px solid #ff88aa; }
+    .speaker { color:#ff88aa; font-weight:bold; font-size:0.9rem; margin-bottom:4px; letter-spacing:1px; }
+    .dialogue-text { color:#fff; font-size:0.85rem; line-height:1.4; min-height:36px; }
+    .controls { background:#0d0520; padding:10px 16px; display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid #ff88aa; justify-content:center; }
+    .btn { background:#ff88aa; border:none; color:white; padding:10px 16px; border-radius:25px; font-size:0.8rem; font-weight:bold; cursor:pointer; transition:0.2s; letter-spacing:1px; font-family:inherit; }
+    .btn:hover,.btn:active { background:#ffaacc; box-shadow:0 0 20px #ff88aa; transform:scale(1.05); }
+    .btn.hug-btn { background:#ff4466; font-size:0.95rem; padding:12px 22px; animation:glowPulse 1.5s ease-in-out infinite; }
+    .btn.double-btn { background:#ff6699; font-size:0.9rem; padding:11px 20px; }
+    .btn.everyone-btn { background:#ff3377; font-size:0.9rem; padding:11px 20px; animation:glowPulse 2s ease-in-out infinite; }
+    .btn.norp-btn { background:#ff88cc; } .btn.papa-btn { background:#6699ff; }
+    .btn.cat-btn { background:#ffaa44; } .btn.seals-btn { background:#88ccff; }
+    .btn.ask-hug-btn { background:#ffb347; font-size:0.9rem; padding:11px 20px; }
+    @keyframes glowPulse { 0%,100%{box-shadow:0 0 10px #ff4466;} 50%{box-shadow:0 0 30px #ff4466;} }
+    .btn:disabled { opacity:0.5; pointer-events:none; }
+    .postgame-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:25; display:none; flex-direction:column; align-items:center; justify-content:flex-start; gap:10px; animation:fadeIn 0.8s ease-out; overflow-y:auto; padding:30px 20px; }
+    .postgame-overlay.active { display:flex; }
+    .postgame-title { color:#FFD700; font-size:1.5rem; font-weight:bold; text-shadow:0 0 30px #FFD700; animation:glowPulse 1s ease-in-out infinite; text-align:center; margin-bottom:5px; }
+    .postgame-message { color:#ffccdd; font-size:0.9rem; text-align:center; max-width:380px; line-height:1.5; }
+    .postgame-btn { background:#FFD700; border:none; color:#1a0a2e; padding:12px 24px; border-radius:30px; font-size:0.9rem; font-weight:bold; cursor:pointer; transition:0.2s; letter-spacing:1px; font-family:inherit; box-shadow:0 0 20px #FFD700; margin:4px 0; min-height:44px; }
+    .postgame-btn:hover { background:#FFF; box-shadow:0 0 35px #FFD700; transform:scale(1.05); }
+    .golden-star { position:absolute; top:8%; left:50%; transform:translateX(-50%); font-size:3.5rem; z-index:5; pointer-events:none; opacity:0; transition:all 1s ease; filter:drop-shadow(0 0 20px #FFD700) drop-shadow(0 0 40px #FFA500); }
+    .golden-star.active { opacity:1; animation:starGlow 1s ease-in-out infinite,starSpin 6s linear infinite; }
+    @keyframes starGlow { 0%,100%{filter:drop-shadow(0 0 20px #FFD700) drop-shadow(0 0 40px #FFA500) scale(1);} 50%{filter:drop-shadow(0 0 40px #FFD700) drop-shadow(0 0 80px #FFA500) scale(1.15);} }
+    @keyframes starSpin { 0%{transform:translateX(-50%) rotateY(0deg);} 100%{transform:translateX(-50%) rotateY(360deg);} }
+    @keyframes fadeIn { 0%{opacity:0;} 100%{opacity:1;} }
+    @media (max-width:600px) { .scene{height:280px;} .character{font-size:2.8rem;} .player{left:2%;} .norp{left:24%;} .papa{left:46%;} .mother{right:2%;} .cat{font-size:1.8rem;left:18%;bottom:20%;} .btn{padding:8px 10px;font-size:0.7rem;} .btn.hug-btn{font-size:0.8rem;padding:10px 14px;} .bed{width:120px;height:80px;} .nightstand{left:24%;width:40px;height:55px;} .wardrobe{width:55px;height:90px;} .plushie{font-size:1.2rem;} #fluffy{bottom:12%;left:25%;} #duppy{bottom:10%;left:33%;} #luppy{bottom:14%;left:29%;} }
+  </style>
+</head>
+<body>
+<div class="game-container" id="gameContainer">
+  <div class="game-header">
+    <span class="game-title">🤗 Hug Mama & Papa</span>
+    <div class="hug-meter-container">
+      <span>Warmte:</span>
+      <div class="hug-meter"><div class="hug-fill" id="hugFill"></div></div>
+      <span id="hugPercent">0%</span>
+    </div>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="wall"><div class="wallpaper"></div></div>
+    <div class="floor"><div class="floor-wood"></div></div>
+    <div class="bed"><div class="bed-pillow"></div><div class="bed-blanket"></div></div>
+    <div class="nightstand"><div class="nightstand-lamp">💡</div></div>
+    <div class="wardrobe"><div class="wardrobe-door"></div></div>
+    <div class="window-frame"><div class="curtain-left"></div><div class="curtain-right"></div></div>
+    <div class="toy-box">🧸</div>
+    <div class="rug"></div>
+    <div class="golden-star" id="goldenStar">⭐</div>
+    <div class="plushie" id="fluffy" title="Fluffy">🦭</div>
+    <div class="plushie" id="duppy" title="Duppy">🦭</div>
+    <div class="plushie" id="luppy" title="Luppy">🦭</div>
+    <div class="character player" id="player">🧒</div>
+    <div class="character norp" id="norp">👧</div>
+    <div class="character papa" id="papa">👨</div>
+    <div class="character mother" id="mother">👩</div>
+    <div class="cat" id="mister" title="Mister de kat" onclick="petMister()">🐱</div>
+    <div class="postgame-overlay" id="postgameOverlay">
+      <div class="postgame-title">🌟 PERFECT SCORE! 🌟</div>
+      <div class="postgame-message">
+        Je hebt 100% warmte bereikt!<br>
+        Mama, Papa, Norp en Sa zijn helemaal gelukkig!<br>
+        De gouden ster schijnt voor altijd in deze knusse slaapkamer!<br>
+        Norps zeehondjes Fluffy, Duppy en Luppy zijn ook blij!<br>
+        En Mister de kat spint van geluk!<br><br>
+        Wat wil je nu doen?
+      </div>
+      <button class="postgame-btn" onclick="playAgain()">🔄 Opnieuw Spelen</button>
+      <button class="postgame-btn" onclick="keepHugging()">💖 Blijf Knuffelen</button>
+    </div>
+  </div>
+
+  <div class="dialogue-box">
+    <div class="speaker" id="speaker">Mama</div>
+    <div class="dialogue-text" id="dialogueText">Welkom thuis, lieverds! Ik heb jullie zo gemist!</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn hug-btn" id="hugBtn" onclick="giveHug()">🤗 Knuffel</button>
+    <button class="btn double-btn" onclick="doubleHug()">💕 Dubbel</button>
+    <button class="btn everyone-btn" onclick="everyoneHug()">💖 Iedereen</button>
+    <button class="btn norp-btn" onclick="hugNorp()">👧 Norp</button>
+    <button class="btn papa-btn" onclick="hugPapa()">👨 Papa</button>
+    <button class="btn cat-btn" onclick="petMister()">🐱 Mister</button>
+    <button class="btn seals-btn" onclick="hugSeals()">🦭 Zeehondjes</button>
+    <button class="btn ask-hug-btn" onclick="askHug()">🙋‍♂️ Vraag knuffel</button>
+    <button class="btn" onclick="saySomething()">💬 Praat</button>
+    <button class="btn" onclick="giveGift()">🎁 Cadeau</button>
+    <button class="btn" onclick="resetGame()">🔄 Opnieuw</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const state = {
+      hugCount: 0, maxHugs: 20, totalWarmth: 0, isHugging: false,
+      giftsGiven: 0, postgameActive: false, infiniteMode: false,
+    };
+
+    const mamaDialogues = [
+      "Welkom thuis, lieverds! Ik heb jullie zo gemist!",
+      "Je maakt mijn dag altijd beter!",
+      "Ik ben zo trots op wie jullie zijn geworden.",
+      "Weet je nog toen je klein was? Je rende elke dag naar me toe!",
+      "De liefde van een mama vervaagt nooit.",
+      "Jullie en Papa zijn het beste wat me ooit is overkomen.",
+      "Kom hier, laat me je nog even vasthouden.",
+      "Ik hou meer van jullie dan woorden kunnen zeggen.",
+      "Dankjewel dat jullie zulke geweldige kinderen zijn.",
+      "Hoe oud je ook wordt, je blijft altijd mijn baby.",
+      "Knuffels zijn het beste medicijn, toch?",
+      "Ik koester elk moment dat we samen zijn.",
+      "Jullie hebben zulke lieve harten. Ik ben zo gezegend.",
+      "Jullie blij zien maakt mij ook blij.",
+      "Vergeet nooit hoeveel er van je gehouden wordt.",
+    ];
+    const saDialogues = [
+      "Ik hou van je, Mama!",
+      "Je bent de beste mama van de hele wereld!",
+      "Dankjewel dat je er altijd voor me bent.",
+      "Mama, je bent mijn held!",
+      "Mag ik hier gewoon blijven en je voor altijd knuffelen?",
+      "Jij weet altijd hoe je me beter moet laten voelen.",
+      "Ik ben zo dankbaar dat jij mijn mama bent.",
+      "Jouw knuffels zijn de warmste!",
+      "Ik hoop dat ik later net zo geweldig word als jij.",
+      "Ik vind je lief, Mama!",
+      "Norp en ik hebben de beste mama!",
+      "Papa is ook de beste!",
+    ];
+    const norpDialogues = [
+      "Hoi! Ik ben Norp!",
+      "Ik wil ook een knuffel!",
+      "Mag ik meedoen?",
+      "Ik hou van jullie!",
+      "Kijk! Ik kan dansen!",
+      "Mijn knuffel heet Pluisje!",
+      "Ik ben al vijf jaar!",
+      "Mama! Papa! Sa! Kijk!",
+      "Ik heb een tekening gemaakt!",
+      "Vind je mijn jurk mooi?",
+      "Ik kan al tot tien tellen!",
+      "Wil je met me spelen?",
+      "Ik hou van pannenkoeken!",
+      "Eén, twee, drie, vier, vijf!",
+      "Slaap lekker!",
+      "Ik ben blij!",
+      "Nog een knuffel alsjeblieft!",
+      "Sa is mijn grote zus/broer!",
+      "Mama is de liefste!",
+      "Papa is grappig!",
+      "Fluffy, Duppy en Luppy zijn mijn beste vriendjes!",
+      "Mijn zeehondjes willen ook een knuffel!",
+      "Fluffy is de zachtste!",
+      "Duppy maakt altijd grapjes!",
+      "Luppy houdt van slapen!",
+      "Mister is de liefste kat van de wereld!",
+    ];
+    const papaDialogues = [
+      "Hé, kampioen! Goed je te zien!",
+      "Kom hier, geef je ouwe papa een knuffel!",
+      "Ik ben trots op je, weet je dat?",
+      "Papa's meisje/jongen!",
+      "Je wordt elke dag groter!",
+      "Ik hou van jou en Norp meer dan wat ook.",
+      "Papa is er altijd voor je.",
+      "Geef me nog een knuffel voor het slapengaan.",
+      "Je maakt me zo blij!",
+      "Mama en ik zijn zo gelukkig met jullie.",
+      "Kom, laten we mama ook een knuffel geven!",
+      "Wie is er klaar voor een berenknuffel?",
+      "Je bent mijn kleine superheld!",
+    ];
+    const misterDialogues = [
+      "Miauw!", "Prrrrr...", "Miauw miauw!", "Ik ben Mister!",
+      "Aai me!", "Ik vind knuffels lekker warm.", "Norp is mijn favoriete mens.",
+      "Miauw! (Ik heb honger)", "Snor snor...", "Laat me met rust, ik slaap.",
+      "Miauw! Aaien!", "Ik lig op de vensterbank.",
+    ];
+
+    const hugFill = document.getElementById('hugFill');
+    const hugPercent = document.getElementById('hugPercent');
+    const speaker = document.getElementById('speaker');
+    const dialogueText = document.getElementById('dialogueText');
+    const player = document.getElementById('player');
+    const norpEl = document.getElementById('norp');
+    const papaEl = document.getElementById('papa');
+    const mother = document.getElementById('mother');
+    const misterEl = document.getElementById('mister');
+    const scene = document.getElementById('scene');
+    const hugBtn = document.getElementById('hugBtn');
+    const goldenStar = document.getElementById('goldenStar');
+    const postgameOverlay = document.getElementById('postgameOverlay');
+
+    function spawnHearts(count = 5) {
+      const hearts = ['❤️','💕','💗','💖','💝','🥰','💓','✨','💞','💘'];
+      for (let i = 0; i < count; i++) {
+        setTimeout(() => {
+          const heart = document.createElement('span');
+          heart.className = 'heart-particle';
+          heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+          heart.style.left = (10 + Math.random() * 80) + '%';
+          heart.style.bottom = (15 + Math.random() * 30) + '%';
+          heart.style.fontSize = (1 + Math.random() * 2.5) + 'rem';
+          scene.appendChild(heart);
+          setTimeout(() => heart.remove(), 1500);
+        }, i * 120);
+      }
+    }
+
+    function addWarmth(amount = 1) {
+      if (state.infiniteMode) { hugFill.style.width = '100%'; hugPercent.textContent = '100%'; return; }
+      state.hugCount += amount;
+      state.totalWarmth = Math.min(100, (state.hugCount / state.maxHugs) * 100);
+      hugFill.style.width = state.totalWarmth + '%';
+      hugPercent.textContent = Math.round(state.totalWarmth) + '%';
+      if (state.totalWarmth >= 100 && !goldenStar.classList.contains('active')) activateGoldenStar();
+    }
+
+    function activateGoldenStar() {
+      goldenStar.classList.add('active');
+      spawnHearts(15);
+      speaker.textContent = 'Iedereen'; dialogueText.textContent = '🌟 WAUW! 100% WARMTE! DE GOUDEN STER VERSCHIJNT! 🌟';
+      setTimeout(() => {
+        state.postgameActive = true;
+        postgameOverlay.classList.add('active');
+        postgameOverlay.scrollTop = 0;
+      }, 3000);
+    }
+
+    function resetCharacters() {
+      scene.classList.remove('hugging');
+      player.textContent = '🧒'; norpEl.textContent = '👧'; papaEl.textContent = '👨'; mother.textContent = '👩';
+      player.style.left = '8%'; norpEl.style.left = '30%'; papaEl.style.left = '50%'; mother.style.right = '8%';
+      player.style.transform = ''; norpEl.style.transform = ''; papaEl.style.transform = ''; mother.style.transform = '';
+      misterEl.style.transform = ''; misterEl.textContent = '🐱';
+      state.isHugging = false; hugBtn.disabled = false;
+    }
+
+    function setDialogue(character, text) {
+      const names = { sa:'Sa', norp:'Norp', papa:'Papa', mister:'Mister', mama:'Mama', seals:'Zeehondjes' };
+      speaker.textContent = names[character] || 'Mama';
+      dialogueText.textContent = text;
+    }
+
+    // ---------- REVISED DEFAULT HUG (everyone moves to Mama) ----------
+    function giveHug() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(1); hugBtn.disabled = true;
+      scene.classList.add('hugging');
+
+      // Everyone moves to Mama's side
+      player.style.left = '35%';  // Sa
+      norpEl.style.left = '40%';  // Norp
+      papaEl.style.left = '45%';  // Papa
+      mother.style.right = '5%';  // Mama stays mostly still
+
+      // Everyone shows love
+      player.textContent = '🧒❤️';
+      norpEl.textContent = '👧❤️';
+      papaEl.textContent = '👨❤️';
+      mother.textContent = '👩❤️';
+
+      // Random dialogue from any family member
+      const speakers = ['sa', 'norp', 'papa'];
+      const who = speakers[Math.floor(Math.random() * speakers.length)];
+      if (who === 'sa') setDialogue('sa', saDialogues[Math.floor(Math.random() * saDialogues.length)]);
+      else if (who === 'norp') setDialogue('norp', norpDialogues[Math.floor(Math.random() * norpDialogues.length)]);
+      else if (who === 'papa') setDialogue('papa', papaDialogues[Math.floor(Math.random() * papaDialogues.length)]);
+
+      spawnHearts(8);
+      setTimeout(() => {
+        setDialogue('mama', mamaDialogues[Math.floor(Math.random() * mamaDialogues.length)]);
+        spawnHearts(6);
+      }, 1200);
+      setTimeout(resetCharacters, 2500);
+    }
+
+    // Double hug stays the same (Sa & Norp hug Mama)
+    function doubleHug() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(2); hugBtn.disabled = true; scene.classList.add('hugging');
+      player.textContent = '🧒💕'; norpEl.textContent = '👧💕'; player.style.left = '18%'; norpEl.style.left = '34%'; mother.style.right = '14%'; mother.textContent = '👩💕';
+      setDialogue('sa', 'Mama! Wij willen je samen knuffelen! 💕');
+      spawnHearts(10);
+      setTimeout(() => { setDialogue('mama', 'Mijn lieve kinderen! Jullie maken mama zo trots! 💖'); spawnHearts(6); }, 1500);
+      setTimeout(resetCharacters, 3000);
+    }
+
+    function everyoneHug() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(4); hugBtn.disabled = true; scene.classList.add('hugging');
+      player.textContent = '🧒💖'; norpEl.textContent = '👧💖'; papaEl.textContent = '👨💖'; mother.textContent = '👩💖';
+      misterEl.textContent = '🐱💖'; document.getElementById('fluffy').textContent = '🦭💖'; document.getElementById('duppy').textContent = '🦭💖'; document.getElementById('luppy').textContent = '🦭💖';
+      player.style.left = '12%'; norpEl.style.left = '28%'; papaEl.style.left = '44%'; mother.style.right = '8%';
+      setDialogue('sa', 'GROEPSKNUFFEL MET IEDEREEN! 💖💖💖');
+      spawnHearts(20);
+      setTimeout(() => { setDialogue('mama', 'Dit is het allermooiste moment! 💖'); spawnHearts(10); }, 1500);
+      setTimeout(() => { setDialogue('norp', 'Zelfs Fluffy, Duppy en Luppy doen mee! 🦭'); spawnHearts(8); }, 2800);
+      setTimeout(() => { setDialogue('mister', 'Prrrr... miauw! 🐱'); spawnHearts(6); }, 4000);
+      setTimeout(() => {
+        document.getElementById('fluffy').textContent = '🦭'; document.getElementById('duppy').textContent = '🦭'; document.getElementById('luppy').textContent = '🦭';
+        misterEl.textContent = '🐱'; resetCharacters();
+      }, 5500);
+    }
+
+    function hugNorp() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(1); hugBtn.disabled = true;
+      norpEl.style.transform = 'scale(1.3)'; norpEl.textContent = '👧💕'; player.style.left = '20%'; player.textContent = '🧒💕';
+      setDialogue('sa', 'Norp! Mijn kleine zusje! 💕');
+      spawnHearts(6);
+      setTimeout(() => { setDialogue('norp', norpDialogues[Math.floor(Math.random() * norpDialogues.length)]); spawnHearts(4); }, 1200);
+      setTimeout(resetCharacters, 2500);
+    }
+
+    function hugPapa() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(1); hugBtn.disabled = true;
+      papaEl.style.transform = 'scale(1.3)'; papaEl.textContent = '👨💕'; player.style.left = '35%'; player.textContent = '🧒💕';
+      setDialogue('sa', 'Papa! Je bent de beste! 💙');
+      spawnHearts(6);
+      setTimeout(() => { setDialogue('papa', papaDialogues[Math.floor(Math.random() * papaDialogues.length)]); spawnHearts(4); }, 1200);
+      setTimeout(resetCharacters, 2500);
+    }
+
+    function petMister() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(1); hugBtn.disabled = true;
+      misterEl.style.transform = 'scale(1.3)'; misterEl.textContent = '🐱💕';
+      setDialogue('mister', misterDialogues[Math.floor(Math.random() * misterDialogues.length)]);
+      spawnHearts(4);
+      setTimeout(() => { misterEl.style.transform = ''; misterEl.textContent = '🐱'; state.isHugging = false; hugBtn.disabled = false; }, 2000);
+    }
+
+    function hugSeals() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(2); hugBtn.disabled = true;
+      document.getElementById('fluffy').textContent = '🦭💕'; document.getElementById('duppy').textContent = '🦭💕'; document.getElementById('luppy').textContent = '🦭💕';
+      setDialogue('sa', 'Fluffy, Duppy, Luppy! Kom hier! 🦭');
+      spawnHearts(8);
+      setTimeout(() => { setDialogue('norp', 'Mijn lieve zeehondjes! Ik hou van jullie!'); spawnHearts(6); }, 1500);
+      setTimeout(() => {
+        document.getElementById('fluffy').textContent = '🦭'; document.getElementById('duppy').textContent = '🦭'; document.getElementById('luppy').textContent = '🦭';
+        state.isHugging = false; hugBtn.disabled = false;
+      }, 3000);
+    }
+
+    function askHug() {
+      if (state.isHugging || state.postgameActive) return;
+      state.isHugging = true; addWarmth(1); hugBtn.disabled = true;
+      scene.classList.add('hugging');
+      const characters = ['mama', 'papa', 'norp', 'mister', 'seals'];
+      const who = characters[Math.floor(Math.random() * characters.length)];
+
+      if (who === 'mama') {
+        mother.textContent = '👩❤️'; mother.style.left = '25%'; player.textContent = '🧒❤️';
+        setDialogue('mama', 'Kom hier, lieverd! Mama geeft je een dikke knuffel!');
+      } else if (who === 'papa') {
+        papaEl.textContent = '👨❤️'; papaEl.style.left = '35%'; player.textContent = '🧒❤️';
+        setDialogue('papa', 'Kom bij papa, kampioen!');
+      } else if (who === 'norp') {
+        norpEl.textContent = '👧❤️'; norpEl.style.left = '25%'; player.textContent = '🧒❤️';
+        setDialogue('norp', 'Sa! Ik wil jou knuffelen!');
+      } else if (who === 'mister') {
+        misterEl.textContent = '🐱❤️'; misterEl.style.left = '25%'; player.textContent = '🧒❤️';
+        setDialogue('mister', 'Miauw! (Mister wrijft tegen je aan)');
+      } else if (who === 'seals') {
+        document.getElementById('fluffy').textContent = '🦭❤️'; document.getElementById('duppy').textContent = '🦭❤️'; document.getElementById('luppy').textContent = '🦭❤️';
+        player.textContent = '🧒❤️';
+        setDialogue('seals', 'Fluffy, Duppy en Luppy rollen naar je toe voor een knuffel!');
+      }
+      spawnHearts(6);
+      setTimeout(() => {
+        resetCharacters();
+        if (who === 'seals') {
+          document.getElementById('fluffy').textContent = '🦭'; document.getElementById('duppy').textContent = '🦭'; document.getElementById('luppy').textContent = '🦭';
+        }
+      }, 2500);
+    }
+
+    function saySomething() {
+      if (state.isHugging || state.postgameActive) return;
+      const who = Math.random() < 0.3 ? 'sa' : Math.random() < 0.55 ? 'norp' : Math.random() < 0.8 ? 'papa' : 'all';
+      if (who === 'sa') { setDialogue('sa', saDialogues[Math.floor(Math.random() * saDialogues.length)]); player.style.transform = 'scale(1.1)'; setTimeout(() => player.style.transform = '', 300); }
+      else if (who === 'norp') { setDialogue('norp', norpDialogues[Math.floor(Math.random() * norpDialogues.length)]); norpEl.style.transform = 'scale(1.2) rotate(10deg)'; setTimeout(() => norpEl.style.transform = '', 400); }
+      else if (who === 'papa') { setDialogue('papa', papaDialogues[Math.floor(Math.random() * papaDialogues.length)]); papaEl.style.transform = 'scale(1.1)'; setTimeout(() => papaEl.style.transform = '', 350); }
+      else { setDialogue('sa', 'Wij houden van elkaar! ❤️💕💖'); player.style.transform = 'scale(1.1)'; norpEl.style.transform = 'scale(1.1)'; papaEl.style.transform = 'scale(1.1)'; setTimeout(() => { player.style.transform = ''; norpEl.style.transform = ''; papaEl.style.transform = ''; }, 400); }
+      spawnHearts(2);
+    }
+
+    function giveGift() {
+      if (state.isHugging || state.postgameActive) return;
+      state.giftsGiven++;
+      const gifts = ['🌸','💐','🍪','☕','📝','🧣','🎀','💌','🕯️','🧸'];
+      const gift = gifts[Math.floor(Math.random() * gifts.length)];
+      const who = Math.random() < 0.3 ? 'sa' : Math.random() < 0.55 ? 'norp' : Math.random() < 0.8 ? 'papa' : 'all';
+      if (who === 'norp') { setDialogue('norp', `Mama! Papa! Ik heb een cadeautje! ${gift}`); norpEl.textContent = '👧🎁'; setTimeout(() => norpEl.textContent = '👧', 2000); }
+      else if (who === 'papa') { setDialogue('papa', `Voor mijn lieve vrouw! ${gift}`); papaEl.textContent = '👨🎁'; setTimeout(() => papaEl.textContent = '👨', 2000); }
+      else if (who === 'all') { setDialogue('sa', `Mama, wij hebben samen cadeautjes! ${gift}`); player.textContent = '🧒🎁'; norpEl.textContent = '👧🎁'; papaEl.textContent = '👨🎁'; setTimeout(() => { player.textContent = '🧒'; norpEl.textContent = '👧'; papaEl.textContent = '👨'; }, 2000); }
+      else { setDialogue('sa', `Mama, ik heb een cadeautje voor je! ${gift}`); player.textContent = '🧒🎁'; setTimeout(() => player.textContent = '🧒', 2000); }
+      spawnHearts(6); addWarmth(1);
+      setTimeout(() => { mother.textContent = '👩' + gift; setDialogue('mama', `Oh lieverd! ${gift} Wat ontzettend lief! Dankjewel!`); spawnHearts(5); }, 1500);
+      setTimeout(() => mother.textContent = '👩', 3500);
+    }
+
+    function resetGame() {
+      state.hugCount = 0; state.totalWarmth = 0; state.isHugging = false;
+      state.giftsGiven = 0; state.postgameActive = false; state.infiniteMode = false;
+      hugFill.style.width = '0%'; hugPercent.textContent = '0%';
+      goldenStar.classList.remove('active'); postgameOverlay.classList.remove('active');
+      resetCharacters(); misterEl.style.transform = ''; misterEl.textContent = '🐱';
+      document.getElementById('fluffy').textContent = '🦭'; document.getElementById('duppy').textContent = '🦭'; document.getElementById('luppy').textContent = '🦭';
+      setDialogue('mama', 'Welkom thuis, lieverds! Ik heb jullie zo gemist!');
+      const overlay = document.querySelector('.message-overlay'); if (overlay) overlay.remove();
+    }
+
+    window.playAgain = function() { resetGame(); };
+    window.keepHugging = function() {
+      state.postgameActive = false; postgameOverlay.classList.remove('active');
+      state.infiniteMode = true;
+      hugFill.style.width = '100%'; hugPercent.textContent = '100%';
+      goldenStar.classList.add('active');
+      setDialogue('mama', 'Knuffel zoveel je wilt! De warmte blijft voor altijd 💖');
+      spawnHearts(10);
+    };
+
+    window.addEventListener('keydown', (e) => {
+      if (state.postgameActive) return;
+      if (e.code === 'Space' || e.code === 'KeyH') { e.preventDefault(); giveHug(); }
+      else if (e.code === 'KeyD') { doubleHug(); } else if (e.code === 'KeyE') { everyoneHug(); }
+      else if (e.code === 'KeyN') { hugNorp(); } else if (e.code === 'KeyP') { hugPapa(); }
+      else if (e.code === 'KeyM') { petMister(); } else if (e.code === 'KeyZ') { hugSeals(); }
+      else if (e.code === 'KeyA') { askHug(); } else if (e.code === 'KeyS') { saySomething(); }
+      else if (e.code === 'KeyG') { giveGift(); } else if (e.code === 'KeyR') { resetGame(); }
+    });
+
+    window.giveHug = giveHug; window.doubleHug = doubleHug; window.everyoneHug = everyoneHug;
+    window.hugNorp = hugNorp; window.hugPapa = hugPapa; window.petMister = petMister;
+    window.hugSeals = hugSeals; window.askHug = askHug; window.saySomething = saySomething; window.giveGift = giveGift; window.resetGame = resetGame;
+  })();
+</script>
+</body>
+</html>

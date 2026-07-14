@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Kast Simulator • Open de juiste kast!</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body {
+      background: #1a0a2e;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', 'Georgia', serif;
+      padding: 8px;
+      margin: 0;
+      touch-action: manipulation;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 500px;
+      background: linear-gradient(180deg, #2d1b4e 0%, #1a0a2e 100%);
+      border: 3px solid #c49b6c;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(196, 155, 108, 0.4);
+      position: relative;
+    }
+    .game-header {
+      background: #0d0520;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #c49b6c;
+    }
+    .game-title {
+      color: #e8c99b;
+      font-size: 1.4rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-shadow: 0 0 15px #c49b6c;
+    }
+    .score-display {
+      color: #e8c99b;
+      font-size: 0.9rem;
+      background: rgba(0,0,0,0.4);
+      padding: 4px 12px;
+      border-radius: 15px;
+      border: 1px solid #c49b6c;
+    }
+    .scene {
+      width: 100%;
+      height: 350px;
+      background: linear-gradient(180deg, #2a1a3e 0%, #1a0a2e 40%, #3d2b1a 60%, #2d1b0e 100%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+    .wall {
+      position: absolute;
+      top: 0; width: 100%; height: 60%;
+      background: linear-gradient(180deg, #f5e6d3 0%, #e8d5c0 100%);
+    }
+    .wallpaper {
+      position: absolute;
+      top: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(90deg, transparent 0px, transparent 30px, rgba(196,155,108,0.1) 30px, rgba(196,155,108,0.1) 32px);
+    }
+    .floor {
+      position: absolute;
+      bottom: 0; width: 100%; height: 40%;
+      background: linear-gradient(180deg, #8B6914 0%, #6B4F12 100%);
+    }
+    .floor-wood {
+      position: absolute; bottom: 0; width: 100%; height: 100%;
+      background: repeating-linear-gradient(0deg, transparent 0px, transparent 6px, rgba(0,0,0,0.2) 6px, rgba(0,0,0,0.2) 8px);
+    }
+    .kast {
+      width: 100px;
+      height: 160px;
+      background: linear-gradient(180deg, #c49b6c, #8B6914);
+      border: 4px solid #6B4F12;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+    }
+    .kast:hover {
+      transform: scale(1.05);
+      filter: brightness(1.2);
+    }
+    .kast:active {
+      transform: scale(0.95);
+    }
+    .kast-door {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #d4a574, #a0704c);
+      border-radius: 6px 6px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      position: relative;
+    }
+    .kast-handle {
+      position: absolute;
+      width: 12px;
+      height: 30px;
+      background: #FFD700;
+      border-radius: 6px;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .kast.open {
+      background: #3d2b1a;
+      transform: scale(1.08);
+      box-shadow: 0 0 30px #FFD700;
+    }
+    .kast.open .kast-door {
+      background: #2a1a0e;
+    }
+    .kast-number {
+      font-size: 0.8rem;
+      color: #FFD700;
+      font-weight: bold;
+      margin-top: 4px;
+      text-shadow: 0 0 5px black;
+    }
+    .message-area {
+      background: rgba(0,0,0,0.85);
+      padding: 12px 18px;
+      border-top: 2px solid #c49b6c;
+      text-align: center;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .message-text {
+      color: #e8c99b;
+      font-size: 1rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .controls {
+      background: #0d0520;
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      border-top: 1px solid #c49b6c;
+      justify-content: center;
+    }
+    .btn {
+      background: #c49b6c;
+      border: none;
+      color: #1a0a2e;
+      padding: 10px 20px;
+      border-radius: 25px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+      letter-spacing: 1px;
+      font-family: inherit;
+    }
+    .btn:hover, .btn:active {
+      background: #d4a574;
+      box-shadow: 0 0 20px #c49b6c;
+      transform: scale(1.05);
+    }
+    .win-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 25;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      animation: fadeIn 0.5s ease-out;
+    }
+    .win-overlay.active { display: flex; }
+    @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .win-title {
+      color: #FFD700;
+      font-size: 2rem;
+      font-weight: bold;
+      text-shadow: 0 0 30px #FFD700;
+      animation: pulse 1s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .win-message {
+      color: #e8c99b;
+      font-size: 1rem;
+      text-align: center;
+      line-height: 1.6;
+    }
+    .particle {
+      position: absolute;
+      pointer-events: none;
+      z-index: 20;
+      animation: floatUp 1.5s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+    @media (max-width: 500px) {
+      .scene { height: 280px; gap: 10px; padding: 10px; }
+      .kast { width: 75px; height: 130px; }
+      .kast-door { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="game-container" id="gameContainer">
+  <div class="game-header">
+    <span class="game-title">🚪 KAST SIMULATOR</span>
+    <span class="score-display">🏆 <span id="winCount">0</span> wins</span>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="wall"><div class="wallpaper"></div></div>
+    <div class="floor"><div class="floor-wood"></div></div>
+    <div id="kastContainer" style="display:flex; gap:20px; z-index:10;"></div>
+  </div>
+
+  <div class="message-area">
+    <span class="message-text" id="messageText">Open een kast om te winnen! 🚪</span>
+  </div>
+
+  <div class="controls">
+    <button class="btn" onclick="resetGame()">🔄 Nieuwe kasten</button>
+  </div>
+
+  <div class="win-overlay" id="winOverlay">
+    <div class="win-title">🎉 GEWONNEN! 🎉</div>
+    <div class="win-message" id="winMessage">Je hebt de juiste kast geopend!</div>
+    <button class="btn" onclick="resetGame()">🔄 Opnieuw spelen</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  let audioCtx = null;
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if (audioCtx.state==='suspended') audioCtx.resume(); }
+  
+  function playOpenSound(success) {
+    try {
+      initAudio();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      if (success) {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523, now);
+        osc.frequency.setValueAtTime(659, now + 0.15);
+        osc.frequency.setValueAtTime(784, now + 0.3);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      }
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.7);
+    } catch(e) {}
+  }
+
+  function playWinSound() {
+    try {
+      initAudio();
+      const now = audioCtx.currentTime;
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.2);
+        gain.gain.setValueAtTime(0, now + i * 0.2);
+        gain.gain.linearRampToValueAtTime(0.2, now + i * 0.2 + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.2 + 0.5);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + i * 0.2);
+        osc.stop(now + i * 0.2 + 0.6);
+      });
+    } catch(e) {}
+  }
+
+  const state = {
+    numKasten: 5,
+    winningKast: 0,
+    opened: [],
+    wins: 0,
+    gameActive: true
+  };
+
+  const kastEmojis = ['👻', '🧸', '👾', '🎈', '📦', '🕯️', '🧹', '👕', '🧦', '📚'];
+  const winEmojis = ['🌟', '💎', '👑', '🎁', '🏆', '💖', '✨', '🎉'];
+
+  function spawnParticles(x, y, count = 8) {
+    const scene = document.getElementById('scene');
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('span');
+      p.className = 'particle';
+      p.textContent = ['✨','💫','⭐','🌟'][Math.floor(Math.random()*4)];
+      p.style.left = (x + Math.random() * 40 - 20) + 'px';
+      p.style.top = (y + Math.random() * 20) + 'px';
+      p.style.fontSize = (1 + Math.random() * 2) + 'rem';
+      scene.appendChild(p);
+      setTimeout(() => p.remove(), 1500);
+    }
+  }
+
+  function createKasten() {
+    state.winningKast = Math.floor(Math.random() * state.numKasten);
+    state.opened = new Array(state.numKasten).fill(false);
+    state.gameActive = true;
+    document.getElementById('winOverlay').classList.remove('active');
+    document.getElementById('messageText').textContent = 'Open een kast om te winnen! 🚪';
+    
+    const container = document.getElementById('kastContainer');
+    container.innerHTML = '';
+    
+    for (let i = 0; i < state.numKasten; i++) {
+      const kast = document.createElement('div');
+      kast.className = 'kast';
+      kast.dataset.index = i;
+      kast.innerHTML = `
+        <div class="kast-door">
+          <div class="kast-handle"></div>
+          <span style="font-size:2rem;">🚪</span>
+        </div>
+        <div class="kast-number">KAST ${i + 1}</div>
+      `;
+      kast.addEventListener('click', function() { openKast(i, kast); });
+      container.appendChild(kast);
+    }
+  }
+
+  function openKast(index, kastElement) {
+    if (!state.gameActive) return;
+    if (state.opened[index]) {
+      document.getElementById('messageText').textContent = 'Deze kast is al open! 🚪';
+      return;
+    }
+    
+    state.opened[index] = true;
+    kastElement.classList.add('open');
+    
+    if (index === state.winningKast) {
+      // WIN!
+      state.gameActive = false;
+      state.wins++;
+      document.getElementById('winCount').textContent = state.wins;
+      const winEmoji = winEmojis[Math.floor(Math.random() * winEmojis.length)];
+      kastElement.querySelector('.kast-door span').textContent = winEmoji;
+      document.getElementById('messageText').textContent = '🎉 GEVONDEN! Dit is de winnende kast!';
+      document.getElementById('winMessage').textContent = `Je hebt kast ${index + 1} geopend! ${winEmoji}`;
+      playWinSound();
+      
+      const rect = kastElement.getBoundingClientRect();
+      const sceneRect = document.getElementById('scene').getBoundingClientRect();
+      spawnParticles(rect.left - sceneRect.left + rect.width/2, rect.top - sceneRect.top);
+      
+      setTimeout(() => {
+        document.getElementById('winOverlay').classList.add('active');
+      }, 800);
+    } else {
+      // Wrong kast
+      const randomEmoji = kastEmojis[Math.floor(Math.random() * kastEmojis.length)];
+      kastElement.querySelector('.kast-door span').textContent = randomEmoji;
+      playOpenSound(false);
+      
+      const remaining = state.numKasten - state.opened.filter(o => o).length;
+      if (remaining > 0) {
+        document.getElementById('messageText').textContent = `Leeg! Nog ${remaining} kast(en) over... 🔍`;
+      }
+    }
+  }
+
+  window.resetGame = function() {
+    createKasten();
+  };
+
+  // Initialize
+  createKasten();
+
+  // Keyboard support
+  window.addEventListener('keydown', (e) => {
+    if (!state.gameActive) return;
+    const num = parseInt(e.key);
+    if (num >= 1 && num <= state.numKasten) {
+      const kastElement = document.querySelector(`.kast[data-index="${num - 1}"]`);
+      if (kastElement) openKast(num - 1, kastElement);
+    }
+    if (e.key === 'r' || e.key === 'R') resetGame();
+  });
+
+  console.log('🚪 Kast Simulator klaar!');
+  console.log('🎯 Open kast 1-' + state.numKasten + ' om te winnen!');
+  console.log('🖱️ Klik op een kast of druk 1-' + state.numKasten + ' op je toetsenbord');
+})();
+</script>
+</body>
+</html>

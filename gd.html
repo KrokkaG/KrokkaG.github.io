@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Geometry Dash – Classic Levels</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; touch-action:manipulation; }
+    canvas { border:2px solid #fff; max-width:100%; max-height:100%; }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+(function() {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Responsive canvas
+  function resize() {
+    const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+    canvas.width = size;
+    canvas.height = size * 1.6; // taller aspect
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Audio context for simple beats
+  let audioCtx = null;
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+  function playJumpSound() {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch(e) {}
+  }
+  function playDeathSound() {
+    try {
+      initAudio();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(50, audioCtx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.5);
+    } catch(e) {}
+  }
+
+  // Game state
+  const STATE = {
+    MENU: 'menu',
+    PLAYING: 'playing',
+    DEAD: 'dead',
+    WIN: 'win'
+  };
+
+  let gameState = STATE.MENU;
+  let currentLevel = 0;
+  let score = 0;
+  let attempts = 0;
+
+  // Player
+  const player = {
+    x: 0,
+    y: 0,
+    vy: 0,
+    size: 0,
+    grounded: false,
+    color: '#ffcc00'
+  };
+
+  const GRAVITY = 0.8;
+  const JUMP_FORCE = -12;
+  const GROUND_Y_RATIO = 0.75; // ground position relative to canvas height
+
+  let groundY;
+
+  // Obstacles
+  let obstacles = [];
+  const OBSTACLE_SPEED = 5;
+  let levelLength = 0; // distance to finish
+
+  // Level definitions
+  const levels = [
+    {
+      name: 'Back on Track',
+      bgColor: '#1a3a1a',
+      groundColor: '#2d5a2d',
+      obstaclePattern: generateBackOnTrack
+    },
+    {
+      name: 'Stereo Madness',
+      bgColor: '#3a1a3a',
+      groundColor: '#5a2d5a',
+      obstaclePattern: generateStereoMadness
+    },
+    {
+      name: 'Base After Base',
+      bgColor: '#1a1a3a',
+      groundColor: '#2d2d5a',
+      obstaclePattern: generateBaseAfterBase
+    },
+    {
+      name: "Can't Let Go",
+      bgColor: '#3a3a1a',
+      groundColor: '#5a5a2d',
+      obstaclePattern: generateCantLetGo
+    },
+    {
+      name: 'Dry Out',
+      bgColor: '#3a2a1a',
+      groundColor: '#5a4a2d',
+      obstaclePattern: generateDryOut
+    }
+  ];
+
+  // Level generators (return array of {x, type, height})
+  function generateBackOnTrack() {
+    const obs = [];
+    for (let i = 400; i < 5000; i += 300 + Math.random()*100) {
+      obs.push({ x: i, type: 'spike', height: 1 });
+    }
+    levelLength = 5200;
+    return obs;
+  }
+  function generateStereoMadness() {
+    const obs = [];
+    for (let i = 400; i < 6000; i += 250) {
+      obs.push({ x: i, type: 'spike', height: Math.random() < 0.3 ? 2 : 1 });
+      if (Math.random() < 0.2) obs.push({ x: i + 100, type: 'spike', height: 1 });
+    }
+    levelLength = 6200;
+    return obs;
+  }
+  function generateBaseAfterBase() {
+    const obs = [];
+    for (let i = 400; i < 5500; i += 350) {
+      obs.push({ x: i, type: 'spike', height: 1 });
+      if (Math.random() < 0.4) obs.push({ x: i + 150, type: 'spike', height: 1.5 });
+    }
+    levelLength = 5700;
+    return obs;
+  }
+  function generateCantLetGo() {
+    const obs = [];
+    for (let i = 400; i < 7000; i += 280) {
+      obs.push({ x: i, type: 'spike', height: 1 });
+      if (i % 800 < 200) obs.push({ x: i + 120, type: 'spike', height: 2 });
+    }
+    levelLength = 7200;
+    return obs;
+  }
+  function generateDryOut() {
+    const obs = [];
+    for (let i = 400; i < 6500; i += 320) {
+      obs.push({ x: i, type: 'spike', height: 1 });
+      if (Math.random() < 0.25) obs.push({ x: i + 180, type: 'spike', height: 1 });
+    }
+    levelLength = 6700;
+    return obs;
+  }
+
+  function startLevel(index) {
+    currentLevel = index;
+    const level = levels[index];
+    obstacles = level.obstaclePattern();
+    levelLength = obstacles.length > 0 ? obstacles[obstacles.length-1].x + 600 : 5000;
+    player.x = 100;
+    player.y = groundY - player.size;
+    player.vy = 0;
+    player.grounded = true;
+    player.size = canvas.width * 0.06;
+    score = 0;
+    gameState = STATE.PLAYING;
+    attempts++;
+  }
+
+  function resetToMenu() {
+    gameState = STATE.MENU;
+  }
+
+  function update() {
+    if (gameState !== STATE.PLAYING) return;
+
+    // Player physics
+    player.vy += GRAVITY;
+    player.y += player.vy;
+    groundY = canvas.height * GROUND_Y_RATIO;
+    if (player.y + player.size >= groundY) {
+      player.y = groundY - player.size;
+      player.vy = 0;
+      player.grounded = true;
+    } else {
+      player.grounded = false;
+    }
+
+    // Move obstacles
+    for (let obs of obstacles) {
+      obs.x -= OBSTACLE_SPEED;
+    }
+    // Remove off-screen obstacles
+    obstacles = obstacles.filter(o => o.x > -100);
+
+    // Collision detection
+    const px = player.x;
+    const py = player.y;
+    const ps = player.size;
+    for (let obs of obstacles) {
+      if (obs.type === 'spike') {
+        const spikeWidth = ps * 1.2;
+        const spikeHeight = obs.height * ps * 1.5;
+        const spikeX = obs.x;
+        const spikeY = groundY - spikeHeight;
+        if (px + ps > spikeX && px < spikeX + spikeWidth &&
+            py + ps > spikeY) {
+          die();
+          return;
+        }
+      }
+    }
+
+    // Score increases with distance
+    score += 0.5;
+    // Win condition
+    if (score > levelLength / 10) {
+      winLevel();
+    }
+  }
+
+  function die() {
+    gameState = STATE.DEAD;
+    playDeathSound();
+  }
+
+  function winLevel() {
+    gameState = STATE.WIN;
+    // Play victory sound
+    try {
+      initAudio();
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.15);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + i * 0.15 + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + i * 0.15);
+        osc.stop(audioCtx.currentTime + i * 0.15 + 0.4);
+      });
+    } catch(e) {}
+  }
+
+  function jump() {
+    if (gameState === STATE.PLAYING && player.grounded) {
+      player.vy = JUMP_FORCE;
+      player.grounded = false;
+      playJumpSound();
+    } else if (gameState === STATE.MENU) {
+      // Start first level or selected
+      startLevel(0);
+    } else if (gameState === STATE.DEAD || gameState === STATE.WIN) {
+      if (gameState === STATE.WIN && currentLevel < levels.length - 1) {
+        startLevel(currentLevel + 1);
+      } else {
+        resetToMenu();
+      }
+    }
+  }
+
+  // Input
+  canvas.addEventListener('click', jump);
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') {
+      e.preventDefault();
+      jump();
+    }
+    // Number keys select level in menu
+    if (gameState === STATE.MENU && e.key >= '1' && e.key <= '5') {
+      startLevel(parseInt(e.key) - 1);
+    }
+  });
+  // Touch support
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); });
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    groundY = canvas.height * GROUND_Y_RATIO;
+
+    if (gameState === STATE.MENU) {
+      // Menu screen
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = `${canvas.width*0.08}px 'Courier New'`;
+      ctx.textAlign = 'center';
+      ctx.fillText('GEOMETRY DASH', canvas.width/2, canvas.height*0.2);
+      ctx.font = `${canvas.width*0.04}px 'Courier New'`;
+      ctx.fillText('Classic Levels', canvas.width/2, canvas.height*0.28);
+      
+      for (let i = 0; i < levels.length; i++) {
+        const y = canvas.height * 0.4 + i * canvas.height * 0.1;
+        ctx.fillStyle = i === 0 ? '#ffcc00' : '#aaa';
+        ctx.fillText(`${i+1}. ${levels[i].name}`, canvas.width/2, y);
+      }
+      ctx.fillStyle = '#888';
+      ctx.font = `${canvas.width*0.03}px 'Courier New'`;
+      ctx.fillText('Tap or press Space to start', canvas.width/2, canvas.height*0.92);
+      ctx.fillText('Press 1-5 to select level', canvas.width/2, canvas.height*0.96);
+      return;
+    }
+
+    // Draw background
+    const level = levels[currentLevel];
+    ctx.fillStyle = level.bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Ground
+    ctx.fillStyle = level.groundColor;
+    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, groundY, canvas.width, 2); // ground line
+
+    // Obstacles
+    for (let obs of obstacles) {
+      if (obs.type === 'spike') {
+        const spikeWidth = player.size * 1.2;
+        const spikeHeight = obs.height * player.size * 1.5;
+        ctx.fillStyle = '#ff4444';
+        // Draw triangle spike
+        ctx.beginPath();
+        ctx.moveTo(obs.x, groundY);
+        ctx.lineTo(obs.x + spikeWidth/2, groundY - spikeHeight);
+        ctx.lineTo(obs.x + spikeWidth, groundY);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    // Player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+    // Eyes
+    ctx.fillStyle = '#000';
+    ctx.fillRect(player.x + player.size*0.2, player.y + player.size*0.2, player.size*0.2, player.size*0.2);
+    ctx.fillRect(player.x + player.size*0.6, player.y + player.size*0.2, player.size*0.2, player.size*0.2);
+
+    // UI
+    ctx.fillStyle = '#fff';
+    ctx.font = `${canvas.width*0.04}px 'Courier New'`;
+    ctx.textAlign = 'left';
+    ctx.fillText(`${levels[currentLevel].name}`, 10, 30);
+    ctx.fillText(`Attempt ${attempts}`, 10, 60);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${Math.floor(score)}`, canvas.width-10, 30);
+
+    if (gameState === STATE.DEAD) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ff0000';
+      ctx.textAlign = 'center';
+      ctx.fillText('YOU CRASHED!', canvas.width/2, canvas.height/2);
+      ctx.fillText('Tap to retry', canvas.width/2, canvas.height/2+40);
+    }
+    if (gameState === STATE.WIN) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#00ff00';
+      ctx.textAlign = 'center';
+      ctx.fillText('LEVEL COMPLETE!', canvas.width/2, canvas.height/2);
+      if (currentLevel < levels.length-1) {
+        ctx.fillText('Tap for next level', canvas.width/2, canvas.height/2+40);
+      } else {
+        ctx.fillText('All levels done! Tap for menu', canvas.width/2, canvas.height/2+40);
+      }
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Initialize
+  groundY = canvas.height * GROUND_Y_RATIO;
+  player.x = 100;
+  player.y = groundY - player.size;
+  player.size = canvas.width * 0.06;
+  resetToMenu();
+  gameLoop();
+})();
+</script>
+</body>
+</html>

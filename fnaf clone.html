@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Ultimate FNAF Fangame • Silent Foxy Rush & Loud Jumpscare</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body { background: #020101; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Courier New', monospace; padding: 4px; margin: 0; touch-action: manipulation; overflow-x: hidden; }
+    .fanfare-screen { background: radial-gradient(circle at 20% 20%, #2c2416, #0f0a04); border: 4px double #4b2e1a; box-shadow: 0 0 30px rgba(180,100,20,0.8), inset 0 0 25px #000; padding: 20px 14px; text-align: center; width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 14px; border-radius: 18px; position: relative; }
+    .static-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.06) 0px, rgba(255,255,200,0.02) 2px, rgba(0,0,0,0.08) 4px); pointer-events: none; border-radius: 18px; z-index: 2; }
+    .title { font-size: 2rem; font-weight: 900; letter-spacing: 3px; color: #f0c040; text-shadow: 3px 3px 0 #6b3a0a, 0 0 25px #ff8c00; z-index: 5; animation: flicker 0.5s infinite alternate; }
+    @keyframes flicker { 0% { opacity: 0.9; text-shadow: 3px 3px 0 #5a2e06, 0 0 20px #ff7700; } 100% { opacity: 1; text-shadow: 3px 3px 0 #6b3a0a, 0 0 35px #ffaa00; } }
+    .subtitle { font-size: 0.8rem; color: #ccaa55; text-shadow: 0 0 10px #ffbb33; background: rgba(0,0,0,0.6); padding: 5px 18px; border-radius: 20px; border: 1px solid #8b691b; z-index: 5; }
+    .fanfare-btn { background: linear-gradient(180deg, #4d3512, #1f1404); border: none; border-bottom: 4px solid #5e3d16; color: #ffdd88; font-family: inherit; font-size: 1.3rem; font-weight: bold; padding: 14px 30px; letter-spacing: 4px; border-radius: 12px; cursor: pointer; box-shadow: 0 0 25px #aa6600; z-index: 10; width: 100%; max-width: 250px; text-shadow: 0 0 8px orange; }
+    .fanfare-btn:active { transform: translateY(3px); border-bottom-width: 2px; }
+    .game-screen { display: none; background: radial-gradient(circle at 30% 30%, #1a160e, #020101); border: 3px solid #4a3820; padding: 8px; border-radius: 14px; box-shadow: 0 0 30px #552200; width: 100%; max-width: 420px; position: relative; }
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; color: #eedd99; font-weight: bold; font-size: 0.85rem; text-shadow: 0 0 6px orange; padding: 0 4px; flex-wrap: wrap; gap: 4px; }
+    .time-display { background: #000; padding: 4px 10px; border: 2px solid #7a5c2c; border-radius: 6px; letter-spacing: 2px; }
+    .score-display { background: #111; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffaa00; color: #ffaa00; font-size: 0.7rem; }
+    .camera-container { display: none; position: relative; width: 100%; margin: 6px 0; }
+    .camera-container.active { display: block; animation: cameraOpen 0.3s ease-out; }
+    @keyframes cameraOpen { 0% { opacity: 0; transform: scale(0.9); filter: brightness(3); } 50% { opacity: 0.8; filter: brightness(1.5); } 100% { opacity: 1; transform: scale(1); filter: brightness(1); } }
+    .camera-static { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.03) 0px, rgba(0,0,0,0.05) 2px, rgba(255,255,255,0.02) 4px); border-radius: 10px; }
+    .camera-scanline { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: rgba(255,255,255,0.1); z-index: 6; pointer-events: none; animation: scanline 2s linear infinite; border-radius: 10px; }
+    @keyframes scanline { 0% { top: 0; } 100% { top: 100%; } }
+    .camera-view { background: #0a0a0a; border: 3px solid #5a4020; border-radius: 10px; padding: 8px; position: relative; min-height: 180px; box-shadow: inset 0 0 30px black; }
+    .camera-label { color: #888; font-size: 0.7rem; text-align: center; margin-bottom: 6px; position: relative; z-index: 7; }
+    .cam-tabs { display: flex; gap: 4px; margin-bottom: 6px; position: relative; z-index: 7; flex-wrap: wrap; justify-content: center; }
+    .cam-tab { background: #1a1a0a; border: 1px solid #5a4020; color: #887744; padding: 5px 8px; border-radius: 6px; font-size: 0.6rem; cursor: pointer; font-family: inherit; }
+    .cam-tab.active { background: #332200; border-color: #ffaa00; color: #ffcc66; box-shadow: 0 0 8px #ff9900; }
+    .cam-view-single { background: #111; border: 2px solid #3a2a10; border-radius: 8px; padding: 10px 6px; text-align: center; min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; z-index: 7; }
+    .cam-recording { color: #ff3333; font-size: 0.55rem; position: absolute; top: 4px; right: 8px; z-index: 7; animation: blink 1s infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+    .power-cell-btn { background: #ffaa00; border: none; color: #000; padding: 8px 14px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-top: 8px; animation: pulse 1s infinite; font-family: inherit; }
+    .office { display: flex; gap: 6px; justify-content: center; margin: 6px 0; }
+    .door-panel { flex: 1; background: #1a1308; border: 2px solid #4a3820; border-radius: 10px; padding: 8px 4px; text-align: center; display: flex; flex-direction: column; gap: 6px; transition: opacity 0.2s; }
+    .door-panel.disabled { opacity: 0.4; pointer-events: none; }
+    .door-btn { background: #2d2416; padding: 10px 4px; border-radius: 8px; border: 2px solid #6b5329; color: #ccaa66; font-weight: bold; font-size: 0.8rem; cursor: pointer; width: 100%; }
+    .door-btn.closed { background: #1f1406; border-color: #ff9900; box-shadow: 0 0 14px #cc8800; color: #ffbb33; }
+    .light-btn { background: #222200; border: 1px solid #665500; color: #ddcc66; padding: 6px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+    .light-btn.on { background: #554400; border-color: #ffcc00; box-shadow: 0 0 12px #ffaa00; color: #fff; }
+    .door-corridor { font-size: 1.5rem; min-height: 28px; transition: 0.2s; }
+    .camera-btn { width: 100%; background: #1a1a0a; border: 2px solid #5e4a28; color: #ddbb55; padding: 11px; border-radius: 25px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin: 4px 0; transition: 0.1s; }
+    .camera-btn.active { background: #332200; border-color: #ffaa00; box-shadow: 0 0 20px #ff9900; color: #fff; }
+    .power-bar { width: 100%; height: 12px; background: #111; border: 2px solid #3d2e14; border-radius: 6px; margin: 6px 0; overflow: hidden; }
+    .power-fill { height: 100%; background: linear-gradient(90deg, #e6b422, #ffaa00); box-shadow: 0 0 10px #ff9900; transition: width 0.3s; }
+    .info-row { display: flex; justify-content: space-between; color: #ccaa55; font-size: 0.7rem; padding: 0 2px; }
+    .message { color: #ffbb55; font-size: 0.75rem; min-height: 18px; text-align: center; text-shadow: 0 0 6px black; margin: 4px 0; }
+    .end-buttons { display: none; gap: 6px; margin-top: 4px; justify-content: center; }
+    .end-buttons.show { display: flex; }
+    .restart-btn, .next-btn { background: #3b2a0f; border: 2px solid #8b691b; color: #ffcc66; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; cursor: pointer; flex: 1; }
+    .next-btn { background: #1a3a0f; border-color: #4a8b1b; color: #aaff66; }
+    .hidden { display: none !important; }
+    .power-out-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 150; flex-direction: column; align-items: center; justify-content: center; animation: powerOutFade 2s ease-in; }
+    .power-out-overlay.active { display: flex; }
+    @keyframes powerOutFade { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .power-out-text { color: #ff8833; font-size: 1.2rem; text-shadow: 0 0 15px #ff6600; }
+    .jumpscare-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; align-items: center; justify-content: center; z-index: 200; flex-direction: column; animation: shake 0.06s infinite; }
+    .jumpscare-face { font-size: 10rem; animation: zoomIn 0.1s, pulse 0.2s infinite; filter: drop-shadow(0 0 60px red) drop-shadow(0 0 120px #ff0000); }
+    .jumpscare-text { color: #ff0000; font-size: 3rem; font-weight: 900; text-shadow: 0 0 40px red, 0 0 80px #ff0000; margin-top: 10px; animation: glitchText 0.05s infinite; }
+    .jumpscare-scream { color: #ff2222; font-size: 2rem; margin-top: 8px; animation: glitchText 0.08s infinite; }
+    @keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-8px,8px); } 50% { transform: translate(8px,-6px); } 75% { transform: translate(-6px,-8px); } 100% { transform: translate(6px,6px); } }
+    @keyframes zoomIn { 0% { transform: scale(0.05); opacity:0; } 100% { transform: scale(1); opacity:1; } }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+    @keyframes glitchText { 0% { transform: translate(0,0); opacity:1; } 33% { transform: translate(-5px,3px); opacity:0.7; } 66% { transform: translate(5px,-2px); opacity:0.8; } 100% { transform: translate(0,0); opacity:1; } }
+    .blood-splat { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 201; background: radial-gradient(circle, rgba(200,0,0,0.6) 0%, transparent 60%); animation: bloodPulse 0.3s infinite; }
+    @keyframes bloodPulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .flicker { animation: flickerEffect 0.15s infinite; }
+    @keyframes flickerEffect { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+    .big-emoji { font-size: 4rem !important; }
+    @media (max-width: 500px) { .title { font-size: 1.5rem; } .jumpscare-face { font-size: 6rem; } .jumpscare-text { font-size: 2rem; } .power-out-text { font-size: 1rem; } }
+  </style>
+</head>
+<body>
+<div id="fanfareScreen" class="fanfare-screen">
+  <div class="static-overlay"></div>
+  <div style="font-size:1.4rem; color:#ffcc66; z-index:5;">★ ★ ★</div>
+  <div class="title">FANGAME<br><span style="font-size:1.1rem;">FANFARE</span></div>
+  <div class="subtitle">FIVE NIGHTS INSPIRED</div>
+  <button id="startBtn" class="fanfare-btn">▶ ENTER</button>
+  <div style="color:#9e8b5c; z-index:5; font-size:0.7rem;">[ tap to begin ]</div>
+</div>
+<div id="gameScreen" class="game-screen">
+  <div class="game-header">
+    <span id="nightDisplay">🌙 NIGHT 1</span>
+    <span class="time-display" id="timeDisplay">12 AM</span>
+    <span class="score-display">⭐ <span id="scoreDisplay">0</span></span>
+  </div>
+  <div class="camera-container" id="cameraContainer">
+    <div class="camera-static"></div>
+    <div class="camera-scanline"></div>
+    <div class="camera-view">
+      <span class="cam-recording">● REC</span>
+      <div class="camera-label">📹 SECURITY CAMERA</div>
+      <div class="cam-tabs" id="camTabs">
+        <button class="cam-tab active" data-cam="stage">STAGE</button>
+        <button class="cam-tab" data-cam="hallway">HALLWAY</button>
+        <button class="cam-tab" data-cam="kitchen">KITCHEN</button>
+        <button class="cam-tab" data-cam="closet">CLOSET</button>
+        <button class="cam-tab" data-cam="leftOutside">LEFT OUT</button>
+        <button class="cam-tab" data-cam="rightOutside">RIGHT OUT</button>
+      </div>
+      <div class="cam-view-single" id="camViewSingle">
+        <div style="font-size:2.5rem;" id="currentAnimatronic">🎤</div>
+        <div style="color:#887744; font-size:0.7rem;" id="currentRoomName">STAGE</div>
+        <div id="powerCellIndicator" style="display:none; margin-top: 8px;">🔋 <button class="power-cell-btn" onclick="collectPowerCell()">COLLECT (+10)</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="office" id="officePanel">
+    <div class="door-panel" id="leftDoorPanel">
+      <div class="door-corridor" id="leftCorridor">🚪</div>
+      <button class="door-btn" id="leftDoorBtn" onclick="toggleDoor('left')">🚪 LEFT<br><small>OPEN</small></button>
+      <button class="light-btn" id="leftLight" onclick="toggleLight('left')">💡 LIGHT</button>
+    </div>
+    <div class="door-panel" id="rightDoorPanel">
+      <div class="door-corridor" id="rightCorridor">🚪</div>
+      <button class="door-btn" id="rightDoorBtn" onclick="toggleDoor('right')">🚪 RIGHT<br><small>OPEN</small></button>
+      <button class="light-btn" id="rightLight" onclick="toggleLight('right')">💡 LIGHT</button>
+    </div>
+  </div>
+  <button id="cameraButton" class="camera-btn" onclick="toggleCamera()">📷 CAMERA</button>
+  <div class="power-bar"><div class="power-fill" id="powerFill" style="width:100%;"></div></div>
+  <div class="info-row"><span>🔋 <span id="powerPercent">100</span>%</span><span id="camIndicator" class="hidden">📸 CAM ACTIVE</span></div>
+  <div class="message" id="gameMessage"></div>
+  <div class="end-buttons" id="endButtons">
+    <button class="restart-btn" onclick="restartGame()">↺ RESTART</button>
+    <button class="next-btn" id="nextButton" onclick="nextNight()">▶ NEXT NIGHT</button>
+  </div>
+</div>
+<div id="powerOutOverlay" class="power-out-overlay">
+  <div class="power-out-text">💡 POWER OUT...</div>
+</div>
+<div id="jumpscareOverlay" class="jumpscare-overlay hidden">
+  <div class="blood-splat"></div>
+  <div class="jumpscare-face" id="jumpscareFace">🐻</div>
+  <div class="jumpscare-text" id="jumpscareMsg">GOT YOU!</div>
+  <div class="jumpscare-scream">AAAAAAAHHH!!!</div>
+</div>
+<script>
+(function() {
+  let audioCtx = null;
+  function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if (audioCtx.state==='suspended') audioCtx.resume(); }
+  function playFanfare() {
+    try {
+      initAudio(); const now = audioCtx.currentTime; const master = audioCtx.createGain(); master.gain.value=0.6; master.connect(audioCtx.destination);
+      function tone(freq,start,dur,type='triangle',vol=0.16) { const osc=audioCtx.createOscillator(),g=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq,start); g.gain.setValueAtTime(0,start); g.gain.linearRampToValueAtTime(vol,start+0.04); g.gain.exponentialRampToValueAtTime(0.001,start+dur); osc.connect(g); g.connect(master); osc.start(start); osc.stop(start+dur+0.03); }
+      function noise(start,dur,vol=0.08) { const len=Math.floor(audioCtx.sampleRate*dur),buf=audioCtx.createBuffer(1,len,audioCtx.sampleRate),d=buf.getChannelData(0); for(let i=0;i<len;i++)d[i]=Math.random()*2-1; const src=audioCtx.createBufferSource(); src.buffer=buf; const g=audioCtx.createGain(); g.gain.setValueAtTime(vol,start); g.gain.linearRampToValueAtTime(0,start+dur); src.connect(g); g.connect(master); src.start(start); src.stop(start+dur); }
+      const t=now; tone(55,t,0.5,'sawtooth',0.2); noise(t+0.1,0.14,0.1); tone(523,t+0.5,0.25,'triangle',0.16); tone(622,t+0.8,0.24,'triangle',0.16); tone(784,t+1.1,0.28,'triangle',0.18); tone(831,t+1.4,0.24,'triangle',0.16); tone(932,t+1.7,0.24,'triangle',0.16); tone(1047,t+2.0,0.35,'triangle',0.18); noise(t+1.9,0.18,0.09); tone(48,t+2.5,0.55,'triangle',0.14);
+    } catch(e) {}
+  }
+  function playScarySound() {
+    try {
+      if (!audioCtx||audioCtx.state==='closed') return;
+      const now = audioCtx.currentTime;
+      const masterVolume = audioCtx.createGain(); masterVolume.gain.value = 1.2; masterVolume.connect(audioCtx.destination);
+      const osc1 = audioCtx.createOscillator(); const gain1 = audioCtx.createGain(); osc1.type = 'sawtooth'; osc1.frequency.setValueAtTime(800, now); osc1.frequency.linearRampToValueAtTime(80, now + 1.5); gain1.gain.setValueAtTime(0.7, now); gain1.gain.linearRampToValueAtTime(0, now + 1.6); osc1.connect(gain1); gain1.connect(masterVolume); osc1.start(now); osc1.stop(now + 1.7);
+      const osc2 = audioCtx.createOscillator(); const gain2 = audioCtx.createGain(); osc2.type = 'square'; osc2.frequency.setValueAtTime(1200, now); osc2.frequency.linearRampToValueAtTime(200, now + 0.8); gain2.gain.setValueAtTime(0.5, now); gain2.gain.linearRampToValueAtTime(0, now + 1.0); osc2.connect(gain2); gain2.connect(masterVolume); osc2.start(now); osc2.stop(now + 1.1);
+      const bufferSize = Math.floor(audioCtx.sampleRate * 1.5); const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = noiseBuffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.8; const noise = audioCtx.createBufferSource(); noise.buffer = noiseBuffer; const noiseGain = audioCtx.createGain(); noiseGain.gain.setValueAtTime(0.6, now); noiseGain.gain.linearRampToValueAtTime(0, now + 1.3); noise.connect(noiseGain); noiseGain.connect(masterVolume); noise.start(now); noise.stop(now + 1.5);
+      const osc3 = audioCtx.createOscillator(); const gain3 = audioCtx.createGain(); osc3.type = 'sine'; osc3.frequency.setValueAtTime(40, now); gain3.gain.setValueAtTime(0.8, now); gain3.gain.linearRampToValueAtTime(0, now + 1.8); osc3.connect(gain3); gain3.connect(masterVolume); osc3.start(now); osc3.stop(now + 2.0);
+    } catch(e) {}
+  }
+
+  const state = {
+    night:1, hour:0, power:100, maxPower:100,
+    leftClosed:false, rightClosed:false, leftLight:false, rightLight:false,
+    cameraUp:false, currentCam:'stage', gameOver:false, powerOut:false,
+    freddy:'stage', bonnie:'stage', chica:'kitchen', foxy:'closet',
+    moveInterval:null, powerInterval:null, attackInterval:null, hourInterval:null,
+    lightTimeout:null, leftDoorDangerTicks:0, rightDoorDangerTicks:0, gracePeriodMax:3,
+    songInterval:null, songTimer:null, powerOutAttackTimer:null,
+    currentSongLine:0, score:0, flickerInterval:null,
+    powerCellRoom:null, powerCellTimer:null, cellsCollected:0,
+    foxyRushTimer:null, foxyRushActive:false, foxyRushSeconds:0
+  };
+  const hours=['12 AM','1 AM','2 AM','3 AM','4 AM','5 AM','6 AM'];
+  const models={freddy:{emoji:'🐻',name:'FREDDY',color:'#8B4513'},bonnie:{emoji:'🐰',name:'BONNIE',color:'#6A0DAD'},chica:{emoji:'🐤',name:'CHICA',color:'#FFD700'},foxy:{emoji:'🦊',name:'FOXY',color:'#FF4500'}};
+  const roomNames={stage:'STAGE',hallway:'HALLWAY',kitchen:'KITCHEN',closet:'CLOSET',leftOutside:'LEFT OUTSIDE',rightOutside:'RIGHT OUTSIDE'};
+
+  function getSpeed() { return 0.8 + (state.night*0.25); }
+
+  function spawnPowerCell() {
+    if (state.powerOut || state.gameOver) return;
+    const rooms = ['stage','hallway','kitchen','closet','leftOutside','rightOutside'];
+    state.powerCellRoom = rooms[Math.floor(Math.random()*rooms.length)];
+    if (state.powerCellTimer) clearTimeout(state.powerCellTimer);
+    state.powerCellTimer = setTimeout(() => { state.powerCellRoom = null; updateUI(); }, 15000);
+    updateUI();
+  }
+
+  window.collectPowerCell = function() {
+    if (!state.powerCellRoom || !state.cameraUp || state.currentCam !== state.powerCellRoom) return;
+    state.power = Math.min(state.maxPower, state.power + 10);
+    state.cellsCollected++;
+    state.powerCellRoom = null;
+    if (state.powerCellTimer) clearTimeout(state.powerCellTimer);
+    document.getElementById('gameMessage').textContent = '🔋 +10 Power!';
+    updateUI();
+    scheduleNextCell();
+  };
+
+  function scheduleNextCell() {
+    const delay = 12000 + Math.random() * 15000;
+    setTimeout(() => { if (!state.gameOver && !state.powerOut) spawnPowerCell(); }, delay);
+  }
+
+  function startFoxyRush(shortTimer) {
+    if (state.foxyRushActive || state.gameOver || state.rightClosed) return;
+    state.foxyRushActive = true;
+    state.foxyRushSeconds = shortTimer ? (4 + Math.floor(Math.random()*2)) : 8;
+    state.foxyRushTimer = setInterval(() => {
+      state.foxyRushSeconds--;
+      if (state.foxyRushSeconds <= 0) {
+        clearInterval(state.foxyRushTimer);
+        if (!state.rightClosed) { triggerJumpscare('FOXY', models.foxy.emoji); }
+        else { state.foxyRushActive = false; }
+      }
+      if (state.rightClosed && state.foxyRushActive) {
+        clearInterval(state.foxyRushTimer); state.foxyRushActive = false;
+        document.getElementById('gameMessage').textContent = '✅ Door blocked something...';
+        setTimeout(() => { if (!state.gameOver) document.getElementById('gameMessage').textContent = ''; }, 2500);
+      }
+    }, 1000);
+  }
+
+  function moveFoxy() {
+    if (state.gameOver || state.powerOut) return;
+    if (state.cameraUp && state.currentCam === 'closet') { state.foxy = 'closet'; return; }
+    if (state.foxy === 'closet' && Math.random() < 0.15 * getSpeed()) {
+      state.foxy = 'running'; startFoxyRush(false);
+    } else if (state.foxy === 'running' && Math.random() < 0.5) {
+      state.foxy = 'closet'; state.foxyRushActive = false;
+      if (state.foxyRushTimer) clearInterval(state.foxyRushTimer);
+    }
+    if (state.cameraUp && state.currentCam === 'closet' && state.foxy === 'running') {
+      if (!state.foxyRushActive) startFoxyRush(true);
+    }
+  }
+
+  function moveFreddy() {
+    if (state.gameOver || state.powerOut) return;
+    const spd = state.cameraUp ? getSpeed() * 0.3 : getSpeed();
+    const fp = ['stage','hallway','leftOutside','leftDoor'];
+    const fi = fp.indexOf(state.freddy);
+    if (Math.random() < 0.2 * spd && fi < fp.length-1) state.freddy = fp[fi+1];
+    else if (Math.random() < 0.1 * spd && fi > 0) state.freddy = fp[fi-1];
+  }
+
+  function moveBonnie() {
+    if (state.gameOver || state.powerOut) return;
+    const bp = ['stage','hallway','leftDoor'];
+    const bi = bp.indexOf(state.bonnie);
+    if (Math.random() < 0.25 * getSpeed() && bi < bp.length-1) state.bonnie = bp[bi+1];
+    else if (Math.random() < 0.1 && bi > 0) state.bonnie = bp[bi-1];
+  }
+
+  function moveChica() {
+    if (state.gameOver || state.powerOut) return;
+    const cp = ['kitchen','hallway','rightDoor'];
+    const ci = cp.indexOf(state.chica);
+    if (Math.random() < 0.25 * getSpeed() && ci < cp.length-1) state.chica = cp[ci+1];
+    else if (Math.random() < 0.1 && ci > 0) state.chica = cp[ci-1];
+  }
+
+  function updateUI() {
+    document.getElementById('nightDisplay').textContent='🌙 NIGHT '+state.night;
+    document.getElementById('timeDisplay').textContent=hours[state.hour]||'6 AM';
+    document.getElementById('scoreDisplay').textContent=state.score;
+    document.getElementById('powerPercent').textContent=Math.floor(state.power);
+    document.getElementById('powerFill').style.width=state.power+'%';
+
+    const lBtn=document.getElementById('leftDoorBtn'), rBtn=document.getElementById('rightDoorBtn');
+    lBtn.innerHTML=state.leftClosed?'🚪 LEFT<br><small>CLOSED</small>':'🚪 LEFT<br><small>OPEN</small>';
+    rBtn.innerHTML=state.rightClosed?'🚪 RIGHT<br><small>CLOSED</small>':'🚪 RIGHT<br><small>OPEN</small>';
+    lBtn.className='door-btn'+(state.leftClosed?' closed':'');
+    rBtn.className='door-btn'+(state.rightClosed?' closed':'');
+    document.getElementById('leftLight').className='light-btn'+(state.leftLight?' on':'');
+    document.getElementById('rightLight').className='light-btn'+(state.rightLight?' on':'');
+
+    const leftCorr=document.getElementById('leftCorridor'), rightCorr=document.getElementById('rightCorridor');
+    if(state.leftLight && !state.cameraUp){
+      let leftChar = '🚪'; let leftColor = '#888';
+      if(state.bonnie==='leftDoor') { leftChar = models.bonnie.emoji; leftColor = models.bonnie.color; }
+      leftCorr.textContent = leftChar; leftCorr.style.color = leftColor;
+    } else { leftCorr.textContent='🚪'; leftCorr.style.color='#888'; }
+    if(state.rightLight && !state.cameraUp){
+      let rightChar = '🚪'; let rightColor = '#888';
+      if(state.chica==='rightDoor') { rightChar = models.chica.emoji; rightColor = models.chica.color; }
+      rightCorr.textContent = rightChar; rightCorr.style.color = rightColor;
+    } else { rightCorr.textContent='🚪'; rightCorr.style.color='#888'; }
+
+    let roomEmoji='';
+    let isBig = false;
+    if(state.currentCam==='stage') roomEmoji=(state.freddy==='stage'?models.freddy.emoji:'')+(state.bonnie==='stage'?models.bonnie.emoji:'')||'🎤';
+    else if(state.currentCam==='hallway') roomEmoji=(state.freddy==='hallway'?models.freddy.emoji:'')+(state.bonnie==='hallway'?models.bonnie.emoji:'')+(state.chica==='hallway'?models.chica.emoji:'')||'🚪';
+    else if(state.currentCam==='kitchen') roomEmoji=state.chica==='kitchen'?models.chica.emoji:'🍕';
+    else if(state.currentCam==='closet') roomEmoji=state.foxy==='closet'?models.foxy.emoji:state.foxy==='running'?'⚠️':'👔';
+    else if(state.currentCam==='leftOutside'){
+      if(state.freddy==='leftOutside') { roomEmoji = models.freddy.emoji; isBig = false; }
+      else { roomEmoji = '🚪'; }
+    }
+    else if(state.currentCam==='rightOutside'){
+      if(state.freddy==='rightOutside') { roomEmoji = models.freddy.emoji; isBig = false; }
+      else { roomEmoji = '🚪'; }
+    }
+    if(state.freddy==='leftDoor' || state.freddy==='rightDoor') {
+      if(state.currentCam==='leftOutside' || state.currentCam==='rightOutside') {
+        roomEmoji = models.freddy.emoji;
+        isBig = true;
+      }
+    }
+    const animDiv = document.getElementById('currentAnimatronic');
+    animDiv.textContent = roomEmoji;
+    animDiv.className = isBig ? 'big-emoji' : '';
+    document.getElementById('currentRoomName').textContent=roomNames[state.currentCam]||'UNKNOWN';
+
+    const cellIndicator = document.getElementById('powerCellIndicator');
+    if (state.cameraUp && state.powerCellRoom === state.currentCam && !state.powerOut) {
+      cellIndicator.style.display = 'block';
+    } else { cellIndicator.style.display = 'none'; }
+
+    const camBtn=document.getElementById('cameraButton'), camContainer=document.getElementById('cameraContainer'), camInd=document.getElementById('camIndicator'), officePanel=document.getElementById('officePanel');
+    if(state.cameraUp&&!state.powerOut){
+      camContainer.classList.add('active'); camBtn.classList.add('active'); camBtn.textContent='📷 CAMERA (ON)'; camInd.classList.remove('hidden'); officePanel.classList.add('disabled');
+    } else {
+      camContainer.classList.remove('active'); camBtn.classList.remove('active'); camBtn.textContent='📷 CAMERA'; camInd.classList.add('hidden'); officePanel.classList.remove('disabled');
+    }
+    if(state.powerOut||state.gameOver){ camBtn.disabled=true; officePanel.classList.add('disabled'); } else { camBtn.disabled=false; }
+
+    document.querySelectorAll('.cam-tab').forEach(tab=>{ tab.classList.toggle('active',tab.dataset.cam===state.currentCam); });
+
+    if(state.gameOver||state.hour>=6){
+      document.getElementById('endButtons').classList.add('show');
+      document.getElementById('nextButton').style.display=(state.hour>=6&&!state.powerOut)?'block':'none';
+    } else { document.getElementById('endButtons').classList.remove('show'); }
+  }
+
+  window.toggleDoor=function(side){
+    if(state.gameOver||state.power<=0||state.powerOut||state.cameraUp)return;
+    if(side==='left'){ state.leftClosed=!state.leftClosed; if(state.leftClosed){state.leftLight=false; state.leftDoorDangerTicks=0;} }
+    else { state.rightClosed=!state.rightClosed; if(state.rightClosed){state.rightLight=false; state.rightDoorDangerTicks=0;} }
+    updateUI();
+  };
+  window.toggleLight=function(side){
+    if(state.gameOver||state.power<=0||state.powerOut||state.cameraUp)return;
+    if(side==='left'){
+      if(state.leftLight) { state.leftLight = false; }
+      else { state.leftLight = true; state.power = Math.max(0, state.power - 1); }
+    } else {
+      if(state.rightLight) { state.rightLight = false; }
+      else { state.rightLight = true; state.power = Math.max(0, state.power - 1); }
+    }
+    updateUI();
+  };
+  window.toggleCamera=function(){
+    if(state.gameOver||state.power<=0||state.powerOut)return;
+    state.cameraUp=!state.cameraUp;
+    if(state.cameraUp){ state.leftLight=false; state.rightLight=false; }
+    updateUI();
+  };
+
+  function startPowerOut(){
+    if(state.powerOut||state.gameOver)return;
+    state.powerOut=true; state.cameraUp=false; state.leftLight=false; state.rightLight=false; state.leftClosed=false; state.rightClosed=false;
+    state.powerCellRoom=null; if(state.powerCellTimer)clearTimeout(state.powerCellTimer);
+    if(state.foxyRushTimer)clearInterval(state.foxyRushTimer); state.foxyRushActive=false;
+    updateUI();
+    document.getElementById('powerOutOverlay').classList.add('active');
+    // Random time until Freddy attacks: 8-20 seconds
+    const attackDelay = 8000 + Math.random() * 12000;
+    state.powerOutAttackTimer = setTimeout(() => {
+      if (!state.gameOver && state.powerOut) {
+        document.getElementById('powerOutOverlay').classList.remove('active');
+        triggerJumpscare('FREDDY', models.freddy.emoji);
+      }
+    }, attackDelay);
+  }
+
+  function endPowerOut(){
+    state.powerOut=false;
+    document.getElementById('powerOutOverlay').classList.remove('active');
+    if(state.powerOutAttackTimer) { clearTimeout(state.powerOutAttackTimer); state.powerOutAttackTimer = null; }
+    if(state.flickerInterval){ clearInterval(state.flickerInterval); state.flickerInterval=null; }
+    document.body.classList.remove('flicker');
+    updateUI();
+  }
+
+  function drainPower(){
+    if(state.gameOver||state.powerOut)return;
+    let baseDrain = 0.5;
+    if(state.leftClosed) baseDrain += 0.7;
+    if(state.rightClosed) baseDrain += 0.7;
+    if(state.cameraUp) baseDrain += 0.5;
+    if(state.leftLight) baseDrain += 0.5;
+    if(state.rightLight) baseDrain += 0.5;
+    if(state.hour >= 3) baseDrain += 0.3;
+    if(state.hour >= 5) baseDrain += 0.4;
+    state.power = Math.max(0, state.power - baseDrain);
+    updateUI();
+    if(state.power < 20 && !state.powerOut && !state.flickerInterval){ state.flickerInterval = setInterval(()=>{ document.body.classList.toggle('flicker'); }, 250); }
+    else if(state.power >= 20 && state.flickerInterval){ clearInterval(state.flickerInterval); state.flickerInterval = null; document.body.classList.remove('flicker'); }
+    if(state.power <= 0 && !state.powerOut) startPowerOut();
+  }
+
+  function moveAnimatronics(){
+    if(state.gameOver||state.powerOut)return;
+    moveFreddy(); moveBonnie(); moveChica(); moveFoxy();
+    updateDangerTicks(); updateUI();
+  }
+  function updateDangerTicks(){
+    if(state.powerOut)return;
+    const leftThreat=(state.freddy==='leftDoor'||state.bonnie==='leftDoor')&&!state.leftClosed;
+    const rightThreat=(state.chica==='rightDoor')&&!state.rightClosed;
+    if(leftThreat)state.leftDoorDangerTicks++; else state.leftDoorDangerTicks=0;
+    if(rightThreat)state.rightDoorDangerTicks++; else state.rightDoorDangerTicks=0;
+  }
+  function checkJumpscare(){
+    if(state.gameOver||state.powerOut)return;
+    if(state.leftDoorDangerTicks>=state.gracePeriodMax){
+      if(state.freddy==='leftDoor'&&!state.leftClosed){ triggerJumpscare('FREDDY',models.freddy.emoji); return; }
+      if(state.bonnie==='leftDoor'&&!state.leftClosed){ triggerJumpscare('BONNIE',models.bonnie.emoji); return; }
+    }
+    if(state.rightDoorDangerTicks>=state.gracePeriodMax){
+      if(state.chica==='rightDoor'&&!state.rightClosed){ triggerJumpscare('CHICA',models.chica.emoji); return; }
+    }
+  }
+  function advanceHour(){
+    if(state.gameOver)return;
+    if(state.powerOut){
+      state.hour++;
+      updateUI();
+      if(state.hour>=6){
+        endPowerOut();
+        endGame(true);
+      }
+      return;
+    }
+    state.hour++; state.score+=100*state.night; updateUI();
+    if(state.hour>=6){ endGame(true); return; }
+    state.freddy='stage'; state.bonnie='stage'; state.chica='kitchen'; state.foxy='closet';
+    state.leftLight=false; state.rightLight=false; state.leftDoorDangerTicks=0; state.rightDoorDangerTicks=0;
+    updateUI();
+  }
+  function endGame(survived){
+    if(state.gameOver)return;
+    state.gameOver=true; clearAllTimers(); endPowerOut();
+    state.cameraUp=false; state.leftLight=false; state.rightLight=false; updateUI();
+    if(survived){
+      state.score+=500*state.night;
+      document.getElementById('gameMessage').textContent='🎉 YOU SURVIVED NIGHT '+state.night+'!';
+      document.getElementById('endButtons').classList.add('show');
+      document.getElementById('nextButton').style.display='block';
+    }
+  }
+  function triggerJumpscare(name,emoji){
+    if(state.gameOver)return;
+    state.gameOver=true; clearAllTimers(); endPowerOut();
+    const overlay=document.getElementById('jumpscareOverlay');
+    document.getElementById('jumpscareFace').textContent=emoji;
+    document.getElementById('jumpscareMsg').textContent=name+' GOT YOU!';
+    overlay.classList.remove('hidden');
+    playScarySound();
+    setTimeout(()=>{
+      overlay.classList.add('hidden');
+      document.getElementById('gameMessage').textContent='💀 GAME OVER';
+      document.getElementById('endButtons').classList.add('show');
+      document.getElementById('nextButton').style.display='none';
+      updateUI();
+    },2800);
+  }
+  function clearAllTimers(){
+    clearInterval(state.moveInterval); clearInterval(state.powerInterval); clearInterval(state.attackInterval); clearInterval(state.hourInterval);
+    if(state.powerOutAttackTimer) clearTimeout(state.powerOutAttackTimer);
+    if(state.flickerInterval)clearInterval(state.flickerInterval); state.flickerInterval=null;
+    if(state.foxyRushTimer)clearInterval(state.foxyRushTimer); state.foxyRushActive=false;
+    document.body.classList.remove('flicker');
+  }
+
+  window.restartGame=function(){
+    clearAllTimers();
+    document.getElementById('jumpscareOverlay').classList.add('hidden'); document.getElementById('powerOutOverlay').classList.remove('active');
+    document.getElementById('endButtons').classList.remove('show'); document.getElementById('gameMessage').textContent='';
+    state.hour=0; state.power=100; state.leftClosed=false; state.rightClosed=false; state.leftLight=false; state.rightLight=false;
+    state.cameraUp=false; state.currentCam='stage'; state.gameOver=false; state.powerOut=false;
+    state.freddy='stage'; state.bonnie='stage'; state.chica='kitchen'; state.foxy='closet';
+    state.leftDoorDangerTicks=0; state.rightDoorDangerTicks=0; state.currentSongLine=0;
+    state.powerCellRoom=null; state.cellsCollected=0; if(state.powerCellTimer)clearTimeout(state.powerCellTimer);
+    document.querySelectorAll('.cam-tab').forEach(tab=>{tab.classList.toggle('active',tab.dataset.cam==='stage');});
+    updateUI();
+    state.powerInterval=setInterval(drainPower,2500); state.moveInterval=setInterval(moveAnimatronics,5000);
+    state.attackInterval=setInterval(checkJumpscare,3000);
+    state.hourInterval=setInterval(()=>{ if(state.gameOver){clearInterval(state.hourInterval);return;} advanceHour(); if(state.hour>=6||state.gameOver)clearInterval(state.hourInterval); }, 45000);
+    scheduleNextCell();
+  };
+  window.nextNight=function(){ state.night++; state.score+=200; document.getElementById('endButtons').classList.remove('show'); document.getElementById('gameMessage').textContent=''; restartGame(); };
+  function startGame(){ document.getElementById('fanfareScreen').style.display='none'; document.getElementById('gameScreen').style.display='block'; state.night=1; state.score=0; restartGame(); }
+  document.getElementById('startBtn').addEventListener('click',function(){ playFanfare(); setTimeout(startGame,700); });
+  document.getElementById('camTabs').addEventListener('click',function(e){ if(e.target.classList.contains('cam-tab')&&state.cameraUp){ state.currentCam=e.target.dataset.cam; updateUI(); }});
+  window.addEventListener('keydown',(e)=>{ if(state.gameOver)return; if(e.key==='a'||e.key==='A')toggleDoor('left'); if(e.key==='d'||e.key==='D')toggleDoor('right'); if(e.key===' '||e.key==='Space'){e.preventDefault(); toggleCamera();} });
+  document.querySelectorAll('button, .door-btn, .light-btn, .cam-tab').forEach(el=>{ el.addEventListener('touchstart',function(e){ e.preventDefault(); this.click(); }); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Local Multiplayer Hub</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    body { background:#1a2a3a; min-height:100vh; display:flex; justify-content:center; align-items:center; font-family:'Segoe UI',Arial,sans-serif; padding:8px; touch-action:manipulation; }
+    .hub { width:100%; max-width:650px; background:#0f2a44; border-radius:16px; border:2px solid #ffcc00; overflow:hidden; box-shadow:0 0 30px rgba(255,204,0,0.3); }
+    .tabs { display:flex; background:#0a1a2e; }
+    .tab-btn { flex:1; padding:12px 5px; background:transparent; border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:0.9rem; border-bottom:3px solid transparent; transition:0.2s; }
+    .tab-btn.active { border-bottom-color:#ffcc00; color:#ffcc00; }
+    .game-panel { display:none; padding:15px; min-height:400px; }
+    .game-panel.active { display:block; }
+
+    /* Shared buttons */
+    .btn { background:#ffcc00; border:none; padding:12px 25px; border-radius:25px; font-weight:bold; font-size:1rem; cursor:pointer; margin:5px; }
+    .btn:active { background:#ffaa00; transform:scale(0.95); }
+    .btn:disabled { opacity:0.5; pointer-events:none; }
+
+    /* Board game */
+    .board-grid { display:grid; grid-template-columns:repeat(10,1fr); gap:2px; aspect-ratio:1/1; max-height:350px; background:#2a4a2a; border:2px solid #ffcc00; border-radius:10px; padding:2px; margin-bottom:10px; position:relative; }
+    .cell { background:#4a7a4a; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:#fff; position:relative; border:1px solid #6a9a6a; }
+    .cell.special { background:#8a6a3a; border-color:#ffcc00; }
+    .cell.start { background:#4a9a4a; } .cell.finish { background:#ffcc00; color:#000; }
+    .player-token { position:absolute; width:22px; height:22px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:12px; z-index:10; transform:translate(-50%,-50%); transition:left 0.3s,top 0.3s; pointer-events:none; }
+    .dice-area { display:flex; align-items:center; gap:15px; justify-content:center; margin:10px 0; }
+    .dice { font-size:3rem; width:70px; height:70px; background:#fff; border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.5); }
+    @keyframes rollDice { 0%{transform:rotateZ(0deg) scale(1);} 50%{transform:rotateZ(20deg) scale(1.1);} 100%{transform:rotateZ(0deg) scale(1);} }
+    .dice.rolling { animation:rollDice 0.5s; }
+    .player-info { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+    .player-card { background:rgba(255,255,255,0.1); border-radius:12px; padding:8px 14px; text-align:center; color:#fff; border:2px solid transparent; }
+    .player-card.active { border-color:#ffcc00; }
+
+    /* Chess */
+    .chess-board { display:grid; grid-template-columns:repeat(8,1fr); aspect-ratio:1/1; max-width:350px; margin:0 auto; border:2px solid #ffcc00; }
+    .chess-cell { display:flex; align-items:center; justify-content:center; font-size:1.5rem; background:#eee; }
+    .chess-cell.dark { background:#6a4e2e; }
+    .chess-cell.selected { outline:3px solid #ffcc00; }
+    .chess-message { color:#ffcc00; text-align:center; margin:10px 0; }
+
+    /* Card Match */
+    .card-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; max-width:350px; margin:0 auto; }
+    .card { aspect-ratio:2/3; background:#ffcc00; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2rem; cursor:pointer; transition:0.3s; }
+    .card.flipped { background:#fff; }
+    .card.matched { opacity:0.3; pointer-events:none; }
+
+    /* Poker */
+    .poker-table { background:#2e4d2e; border-radius:15px; padding:20px; text-align:center; color:#fff; }
+    .hand { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .poker-card { background:#fff; border-radius:8px; padding:10px 15px; font-size:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .controls { margin-top:15px; }
+  </style>
+</head>
+<body>
+<div class="hub">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('board')">🎲 Party Board</button>
+    <button class="tab-btn" onclick="switchTab('chess')">♟️ Chess</button>
+    <button class="tab-btn" onclick="switchTab('cards')">🃏 Match</button>
+    <button class="tab-btn" onclick="switchTab('poker')">♦️ Poker</button>
+  </div>
+
+  <!-- Party Board -->
+  <div id="boardPanel" class="game-panel active">
+    <div class="turn-indicator" id="turnText" style="color:#ffcc00; font-weight:bold;">Player 1's turn</div>
+    <div class="player-info" id="playerInfo"></div>
+    <div class="board-grid" id="boardGrid"></div>
+    <div class="dice-area">
+      <div class="dice" id="diceDisplay">🎲</div>
+      <button class="btn" id="rollBtn">Roll Dice</button>
+    </div>
+    <div id="messageArea" style="color:#ffcc00; min-height:20px;"></div>
+    <button class="btn" onclick="resetBoardGame()">New Game</button>
+  </div>
+
+  <!-- Chess -->
+  <div id="chessPanel" class="game-panel">
+    <div class="chess-message" id="chessMessage">White's turn</div>
+    <div class="chess-board" id="chessBoard"></div>
+    <button class="btn" onclick="resetChess()">Restart</button>
+  </div>
+
+  <!-- Card Match -->
+  <div id="cardsPanel" class="game-panel">
+    <div class="card-grid" id="cardGrid"></div>
+    <div style="color:#ffcc00; text-align:center; margin:10px;" id="cardMessage">Find matching pairs!</div>
+    <button class="btn" onclick="resetCardGame()">New Game</button>
+  </div>
+
+  <!-- Poker -->
+  <div id="pokerPanel" class="game-panel">
+    <div class="poker-table">
+      <h2>Poker Hand Evaluator</h2>
+      <div class="hand" id="pokerHand"></div>
+      <div class="controls">
+        <button class="btn" onclick="dealPoker()">Deal Hand</button>
+        <span id="pokerResult" style="color:#ffcc00; margin-left:15px;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- TAB SWITCHING ----------
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
+  if (tab==='board') { document.getElementById('boardPanel').classList.add('active'); document.querySelector('.tab-btn:nth-child(1)').classList.add('active'); }
+  else if (tab==='chess') { document.getElementById('chessPanel').classList.add('active'); document.querySelector('.tab-btn:nth-child(2)').classList.add('active'); initChess(); }
+  else if (tab==='cards') { document.getElementById('cardsPanel').classList.add('active'); document.querySelector('.tab-btn:nth-child(3)').classList.add('active'); initCardGame(); }
+  else if (tab==='poker') { document.getElementById('pokerPanel').classList.add('active'); document.querySelector('.tab-btn:nth-child(4)').classList.add('active'); }
+}
+
+// ================== PARTY BOARD GAME ==================
+const TOTAL_CELLS = 100, COLS = 10;
+let boardPlayers = [], currentPlayer = 0, boardActive = false, isRolling = false;
+const playerColors = ['#ff4444','#44aaff','#44ff44','#ffaa44'];
+const playerEmojis = ['🦊','🐸','🐼','🦁'];
+const specialSpaces = {4:{type:'bonus',icon:'🎁'},9:{type:'move',icon:'⏩',value:3},14:{type:'skip',icon:'💤'},19:{type:'move',icon:'⏪',value:-2},24:{type:'teleport',icon:'🚀',value:40},29:{type:'bonus',icon:'🎁'},34:{type:'move',icon:'⏩',value:4},39:{type:'skip',icon:'💤'},44:{type:'teleport',icon:'🚀',value:60},49:{type:'bonus',icon:'🎁'},54:{type:'move',icon:'⏪',value:-3},59:{type:'skip',icon:'💤'},64:{type:'teleport',icon:'🚀',value:80},69:{type:'bonus',icon:'🎁'},74:{type:'move',icon:'⏩',value:5},79:{type:'skip',icon:'💤'},84:{type:'move',icon:'⏪',value:-4},89:{type:'teleport',icon:'🚀',value:98},94:{type:'bonus',icon:'🎁'},99:{type:'finish',icon:'🏆'}};
+
+function indexToGrid(i) {
+  const row = Math.floor(i/COLS);
+  const col = row%2===0 ? i%COLS : COLS-1-(i%COLS);
+  return {row, col};
+}
+
+function createBoard() {
+  const grid = document.getElementById('boardGrid');
+  grid.innerHTML = '';
+  for (let i=0; i<TOTAL_CELLS; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+    const num = document.createElement('span'); num.textContent=i; num.style.fontSize='0.5rem'; num.style.position='absolute'; num.style.top='1px'; num.style.left='2px'; num.style.color='rgba(255,255,255,0.7)';
+    cell.appendChild(num);
+    if (i===0) cell.classList.add('start');
+    if (specialSpaces[i] && i!==99) { cell.classList.add('special'); cell.innerHTML += specialSpaces[i].icon; }
+    if (i===99) { cell.classList.add('finish'); cell.innerHTML = '🏁'; }
+    grid.appendChild(cell);
+  }
+}
+
+function createTokens() {
+  document.querySelectorAll('.player-token').forEach(t=>t.remove());
+  boardPlayers.forEach((p,idx)=>{
+    const token = document.createElement('div');
+    token.className = 'player-token';
+    token.id = `token-${idx}`;
+    token.style.background = playerColors[idx];
+    token.textContent = playerEmojis[idx];
+    document.getElementById('boardGrid').appendChild(token);
+  });
+  updateAllTokens();
+}
+
+function updateTokenPosition(idx) {
+  const token = document.getElementById(`token-${idx}`);
+  if (!token) return;
+  const pos = boardPlayers[idx].position;
+  const {row, col} = indexToGrid(pos);
+  const cellSize = document.getElementById('boardGrid').clientWidth / COLS;
+  token.style.left = (col*cellSize + cellSize/2) + 'px';
+  token.style.top = (row*cellSize + cellSize/2) + 'px';
+}
+
+function updateAllTokens() { boardPlayers.forEach((_,i)=>updateTokenPosition(i)); }
+
+function updatePlayerInfo() {
+  const container = document.getElementById('playerInfo');
+  container.innerHTML = '';
+  boardPlayers.forEach((p,idx)=>{
+    const card = document.createElement('div');
+    card.className = 'player-card' + (idx===currentPlayer?' active':'');
+    card.innerHTML = `${playerEmojis[idx]} P${idx+1}<br>Pos: ${p.position}` + (p.skipTurn?'<br>SKIP':'');
+    container.appendChild(card);
+  });
+  document.getElementById('turnText').textContent = `Player ${currentPlayer+1}'s turn`;
+}
+
+function rollDice() {
+  if (!boardActive || isRolling) return;
+  if (boardPlayers[currentPlayer].skipTurn) {
+    document.getElementById('messageArea').textContent = 'Turn skipped!';
+    boardPlayers[currentPlayer].skipTurn = false;
+    nextTurn();
+    return;
+  }
+  isRolling = true;
+  document.getElementById('rollBtn').disabled = true;
+  const dice = document.getElementById('diceDisplay');
+  dice.classList.add('rolling');
+  const interval = setInterval(()=>{ dice.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][Math.floor(Math.random()*6)]; }, 80);
+  setTimeout(()=>{
+    clearInterval(interval);
+    const val = Math.floor(Math.random()*6)+1;
+    dice.textContent = ['⚀','⚁','⚂','⚃','⚄','⚅'][val-1];
+    dice.classList.remove('rolling');
+    movePlayer(val);
+  }, 600);
+}
+
+function movePlayer(steps) {
+  const p = boardPlayers[currentPlayer];
+  let target = Math.min(p.position + steps, TOTAL_CELLS-1);
+  animateMove(p, target, ()=>{
+    p.position = target;
+    updateAllTokens();
+    checkSpecial(p, target);
+  });
+}
+
+function animateMove(player, target, cb) {
+  let current = player.position;
+  if (current===target) { cb(); return; }
+  const interval = setInterval(()=>{
+    current++;
+    player.position = current;
+    updateTokenPosition(currentPlayer);
+    if (current >= target) { clearInterval(interval); cb(); }
+  }, 100);
+}
+
+function checkSpecial(player, pos) {
+  const s = specialSpaces[pos];
+  if (!s) { endMove(false); return; }
+  document.getElementById('messageArea').textContent = s.icon + ' ' + (s.type==='finish'?'YOU WIN!':s.type);
+  if (s.type==='bonus') { setTimeout(()=>{ endMove(true); }, 500); }
+  else if (s.type==='move') {
+    let newPos = Math.max(0, Math.min(TOTAL_CELLS-1, pos + s.value));
+    setTimeout(()=>{
+      animateMove(player, newPos, ()=>{ player.position = newPos; updateAllTokens(); endMove(false); });
+    }, 500);
+  } else if (s.type==='skip') { player.skipTurn = true; endMove(false); }
+  else if (s.type==='teleport') {
+    setTimeout(()=>{
+      animateMove(player, s.value, ()=>{ player.position = s.value; updateAllTokens(); endMove(false); });
+    }, 500);
+  } else if (s.type==='finish') {
+    boardActive = false; document.getElementById('rollBtn').disabled = true;
+    setTimeout(()=>{ alert(`Player ${currentPlayer+1} wins!`); resetBoardGame(); }, 200);
+  }
+}
+
+function endMove(extraRoll) {
+  if (!extraRoll) nextTurn();
+  isRolling = false;
+  document.getElementById('rollBtn').disabled = false;
+  updatePlayerInfo();
+  updateAllTokens();
+}
+
+function nextTurn() {
+  currentPlayer = (currentPlayer+1) % boardPlayers.length;
+  updatePlayerInfo();
+}
+
+function resetBoardGame() {
+  boardActive = false; isRolling = false;
+  document.getElementById('rollBtn').disabled = true;
+  document.getElementById('diceDisplay').textContent = '🎲';
+  document.getElementById('messageArea').textContent = '';
+  document.querySelectorAll('.player-token').forEach(t=>t.remove());
+  // Reset to 2 players by default
+  boardPlayers = [{position:0,skipTurn:false},{position:0,skipTurn:false}];
+  currentPlayer = 0;
+  boardActive = true;
+  document.getElementById('rollBtn').disabled = false;
+  createBoard(); createTokens(); updateAllTokens(); updatePlayerInfo();
+}
+
+document.getElementById('rollBtn').addEventListener('click', rollDice);
+window.addEventListener('resize', ()=>{ if (boardActive) updateAllTokens(); });
+createBoard();
+
+// ================== CHESS (simplified) ==================
+let chessBoard = [], chessTurn = 'white', selectedCell = null;
+function initChess() {
+  const board = document.getElementById('chessBoard');
+  board.innerHTML = '';
+  chessBoard = Array(8).fill().map(()=>Array(8).fill(null));
+  // Place pieces: white on bottom (row 6-7), black on top (row 0-1)
+  const setup = [
+    '♜♞♝♛♚♝♞♜',
+    '♟♟♟♟♟♟♟♟',
+    '        ',
+    '        ',
+    '        ',
+    '        ',
+    '♙♙♙♙♙♙♙♙',
+    '♖♘♗♕♔♗♘♖'
+  ];
+  for (let r=0; r<8; r++) {
+    for (let c=0; c<8; c++) {
+      const piece = setup[r].trim()[c] || '';
+      if (piece !== ' ') chessBoard[r][c] = {type: piece, color: r<=1 ? 'black' : 'white'};
+      const cell = document.createElement('div');
+      cell.className = 'chess-cell' + ((r+c)%2===0 ? '' : ' dark');
+      cell.dataset.row = r; cell.dataset.col = c;
+      cell.textContent = piece || '';
+      cell.addEventListener('click', ()=>onChessClick(r,c,cell));
+      board.appendChild(cell);
+    }
+  }
+  chessTurn = 'white'; selectedCell = null;
+  document.getElementById('chessMessage').textContent = 'White\'s turn';
+}
+
+function onChessClick(r,c,cell) {
+  if (selectedCell && selectedCell.r===r && selectedCell.c===c) {
+    cell.classList.remove('selected'); selectedCell = null; return;
+  }
+  if (selectedCell) {
+    // move attempt
+    const piece = chessBoard[selectedCell.r][selectedCell.c];
+    if (piece && piece.color === chessTurn) {
+      // simple validation: must be a different square and not capture own piece
+      if ((chessBoard[r][c]===null || chessBoard[r][c].color !== piece.color) &&
+          (r!==selectedCell.r || c!==selectedCell.c)) {
+        chessBoard[r][c] = piece;
+        chessBoard[selectedCell.r][selectedCell.c] = null;
+        document.querySelectorAll('.chess-cell').forEach(cell=>cell.classList.remove('selected'));
+        selectedCell = null;
+        chessTurn = chessTurn==='white'?'black':'white';
+        document.getElementById('chessMessage').textContent = chessTurn==='white'?'White\'s turn':'Black\'s turn';
+        renderChessBoard();
+        return;
+      }
+    }
+    document.querySelectorAll('.chess-cell').forEach(cell=>cell.classList.remove('selected'));
+  }
+  if (chessBoard[r][c] && chessBoard[r][c].color === chessTurn) {
+    cell.classList.add('selected');
+    selectedCell = {r,c};
+  } else { selectedCell = null; }
+}
+
+function renderChessBoard() {
+  const board = document.getElementById('chessBoard');
+  const cells = board.children;
+  for (let r=0; r<8; r++) {
+    for (let c=0; c<8; c++) {
+      const piece = chessBoard[r][c];
+      cells[r*8+c].textContent = piece ? piece.type : '';
+    }
+  }
+}
+
+function resetChess() { initChess(); }
+
+// ================== CARD MATCH ==================
+let cardSymbols = '🦊🐸🐼🦁🐱🐶🐰🐻'.split(''), cardDeck = [], cardFlipped = [], cardLocked = false, cardFirst = null;
+
+function initCardGame() {
+  const grid = document.getElementById('cardGrid');
+  grid.innerHTML = '';
+  cardDeck = [...cardSymbols, ...cardSymbols].sort(()=>Math.random()-0.5);
+  cardFlipped = new Array(16).fill(false);
+  cardLocked = false; cardFirst = null;
+  document.getElementById('cardMessage').textContent = 'Find matching pairs!';
+  for (let i=0; i<16; i++) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.index = i;
+    card.addEventListener('click', ()=>flipCard(i, card));
+    grid.appendChild(card);
+  }
+}
+
+function flipCard(i, card) {
+  if (cardLocked || cardFlipped[i]) return;
+  card.classList.add('flipped');
+  card.textContent = cardDeck[i];
+  cardFlipped[i] = true;
+  if (!cardFirst) { cardFirst = {i, card}; return; }
+  // second card
+  if (cardDeck[cardFirst.i] === cardDeck[i]) {
+    // match
+    cardFirst.card.classList.add('matched');
+    card.classList.add('matched');
+    document.getElementById('cardMessage').textContent = 'Match!';
+    cardFirst = null;
+    if (document.querySelectorAll('.card.matched').length === 16) {
+      document.getElementById('cardMessage').textContent = 'You win!';
+    }
+  } else {
+    cardLocked = true;
+    document.getElementById('cardMessage').textContent = 'No match...';
+    setTimeout(()=>{
+      cardFirst.card.classList.remove('flipped');
+      cardFirst.card.textContent = '';
+      card.classList.remove('flipped');
+      card.textContent = '';
+      cardFlipped[cardFirst.i] = false;
+      cardFlipped[i] = false;
+      cardFirst = null;
+      cardLocked = false;
+    }, 800);
+  }
+}
+
+function resetCardGame() { initCardGame(); }
+
+// ================== POKER ==================
+function dealPoker() {
+  const suits = ['♠','♥','♦','♣'];
+  const values = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  const hand = [];
+  for (let i=0; i<5; i++) {
+    const suit = suits[Math.floor(Math.random()*4)];
+    const val = values[Math.floor(Math.random()*13)];
+    hand.push({suit, val});
+  }
+  document.getElementById('pokerHand').innerHTML = hand.map(c=>`<div class="poker-card">${c.val}${c.suit}</div>`).join('');
+  const result = evaluatePoker(hand);
+  document.getElementById('pokerResult').textContent = result;
+}
+
+function evaluatePoker(hand) {
+  const values = hand.map(c=>c.val);
+  const suits = hand.map(c=>c.suit);
+  const isFlush = suits.every(s=>s===suits[0]);
+  const order = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  const indices = values.map(v=>order.indexOf(v)).sort((a,b)=>a-b);
+  const isStraight = indices.every((v,i)=>i===0||v===indices[i-1]+1) || (indices.join(',')==='0,1,2,3,12');
+  const counts = {}; values.forEach(v=>counts[v]=(counts[v]||0)+1);
+  const countVals = Object.values(counts).sort((a,b)=>b-a);
+  if (isStraight && isFlush) return 'Straight Flush!';
+  if (countVals[0]===4) return 'Four of a Kind!';
+  if (countVals[0]===3 && countVals[1]===2) return 'Full House!';
+  if (isFlush) return 'Flush!';
+  if (isStraight) return 'Straight!';
+  if (countVals[0]===3) return 'Three of a Kind!';
+  if (countVals[0]===2 && countVals[1]===2) return 'Two Pair!';
+  if (countVals[0]===2) return 'One Pair!';
+  return 'High Card';
+}
+
+// Initialize board game on load
+boardPlayers = [{position:0,skipTurn:false},{position:0,skipTurn:false}];
+boardActive = true; currentPlayer = 0;
+createBoard(); createTokens(); updateAllTokens(); updatePlayerInfo();
+document.getElementById('rollBtn').disabled = false;
+</script>
+</body>
+</html>
